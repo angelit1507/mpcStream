@@ -16,8 +16,8 @@ var options = {
 
 // Setup and configure Express http server. Expect a subfolder called "static" to be the web root.
 var httpApp = express();
-httpApp.use(bodyParser.json()); // support json encoded bodies
-httpApp.use(bodyParser.urlencoded({extended: true})); // support encoded bodies
+httpApp.use(bodyParser.json({limit: '50mb'})); // support json encoded bodies
+httpApp.use(bodyParser.urlencoded({extended: true,limit: '50mb'})); // support encoded bodies
 httpApp.use(express.static(__dirname + "/static/"));
 
 httpApp.get('/getuser/:id?', function (req, res) {
@@ -50,7 +50,25 @@ httpApp.post('/login/', function (req, res) {
             res.send(result);
     });
 });
-
+httpApp.post('/listQuestions/', function (req, res) {
+    console.log('get list')
+    db.listQuestions({}, function (err, result) {
+        if (err)
+            res.send(err);
+        else
+            res.send(result);
+    });
+});
+httpApp.post('/sendQuestion/', function (req, res) {
+    if (!req.body || !req.body.Title || !req.body.Content || !req.body.UserID)
+        res.json({code: 'ERROR', message: 'data is invalid!'})
+    db.sendQuestion(req.body, function (err, result) {
+        if (err)
+            res.send(err);
+        else
+            res.send(result);
+    });
+});
 
 // Start Express https server on port 8443
 var webServer = https.createServer(options, httpApp).listen(443);
@@ -67,7 +85,7 @@ var socketServer = io.listen(webServer, {"log level": 1});
 // Start Socket.io so it attaches itself to Express server
 //var socketServer = io.listen(webServer, {"log level":1});
 
-easyrtc.setOption("logLevel", "debug");
+easyrtc.setOption("logLevel", "error");
 
 // Overriding the default easyrtcAuth listener, only so we can directly access its callback
 easyrtc.events.on("easyrtcAuth", function (socket, easyrtcid, msg, socketCallback, callback) {

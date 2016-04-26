@@ -1,21 +1,27 @@
 var mysql = require("mysql");               // connect to mysql
 var crypto = require('crypto');
 var Connection = require('tedious').Connection;
+
+var Request = require('tedious').Request;
+var TYPES = require('tedious').TYPES;
 var config = {
     userName: 'sa',
     password: 's2xEv!lFuck!ng',
     server: '14.0.21.62',
     // When you connect to Azure SQL Database, you need these next options.
-    options: {encrypt: true, database: 'mpcdata'}
+    options: {
+        encrypt: true, database: 'mpcdata', rowCollectionOnRequestCompletion: 'true',
+        rowCollectionOnDone: 'true'
+    }
 };
 var connection = new Connection(config);
+connection.isConnected = false;
 connection.on('connect', function (err) {
     // If no error, then good to proceed.
-    console.log("Connected");
+    connection.isConnected = true;
+    console.log("database connected");
 });
 
-var Request = require('tedious').Request;
-var TYPES = require('tedious').TYPES;
 
 connection.getUserById = function (userId, callback) {
     var request = new Request("SELECT * FROM Users WHERE UserID=" + userId, function (err, rowsCount, rows) {
@@ -84,6 +90,56 @@ connection.login = function (user, callback) {
     request.on('done', function (rowCount, more) {
         console.log(rowCount + ' rows returned');
         callback(null, rowCount)
+    });
+    connection.execSql(request);
+}
+
+connection.listQuestions = function (model, callback) {
+    var request = new Request("SELECT * FROM Stream_Questions WHERE IsDeleted='false' ORDER BY CreatedAt DESC", function (err, rowsCount, rows) {
+        if (err) {
+            console.log(err);
+            callback(err);
+            return;
+        }
+        if (rowsCount == 0) {
+            callback(null, []);
+            return
+        }
+        var questions = [];
+        rows.forEach(function (columns) {
+            if (columns.length == 0) {
+                return
+            }
+            var result = {};
+            columns.forEach(function (column) {
+                if (column.value === null) {
+                    console.log('NULL');
+                } else {
+                    result[column.metadata.colName] = column.value;
+                }
+            });
+            questions.push(result);
+        })
+        callback(null, questions);
+    });
+    connection.execSql(request);
+}
+connection.sendQuestion = function (question, callback) {
+    var now = new Date(); // 2016-03-03 00:00:00.000
+    var created = now.getFullYear() + '-' + now.getMonth() + '-' + now.getDay() + ' ' + now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds() + '.' + now.getMilliseconds();
+    console.log(question.Content);
+    var request = new Request("INSERT INTO Stream_Questions (UserID, Title, Content, Image, IsDeleted, CreatedAt) VALUES (" + question.UserID + ",'"
+        + question.Title + "','"
+        + question.Content + "','"
+        + question.Image + "',"
+        + "'false','"
+        + created + "');", function (err, rowsCount, rows) {
+        if (err) {
+            console.log(err);
+            callback(err);
+            return;
+        }
+        callback(null, {});
     });
     connection.execSql(request);
 }

@@ -187,3 +187,11 @@ body {
     display: block;
     margin: 0px auto;
 }
+
+.question_panel{
+    height: 19.8%;
+}
+.question_panel .question_item{
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 10px;
+}

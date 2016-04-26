@@ -18,4 +18,8 @@ function loginController($scope,userService,localStorageService) {
             $scope.$close(rs);
         })
     }
+
+    $scope.viewOnly = function () {
+        $scope.$close();
+    }
 }

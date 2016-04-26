@@ -21,9 +21,48 @@ app.factory('userService', ['$http', function ($http) {
         },
         login: function (data) {
             return $http.post(api + 'login', data);
+        },
+        listQuestions: function (model) {
+            return $http.post(api + 'listQuestions', {});
+        },
+        sendQuestion: function (question) {
+            return $http.post(api + 'sendQuestion', question);
         }
     }
 }])
+
+app.directive('errSrc', function () {
+    var errSrc = {
+        link: function postLink(scope, iElement, iAttrs) {
+            iElement.bind('error', function () {
+                if (iAttrs.errHide)
+                    $(iElement).hide();
+                else
+                    angular.element(this).attr("src", iAttrs.errSrc);
+            });
+        }
+    }
+    return errSrc;
+});
+app.directive("fileread", [function () {
+    return {
+        scope: {
+            fileread: "="
+        },
+        link: function (scope, element, attributes) {
+            element.bind("change", function (changeEvent) {
+                var reader = new FileReader();
+                reader.onload = function (loadEvent) {
+                    scope.$apply(function () {
+                        scope.fileread = loadEvent.target.result;
+                    });
+                }
+                reader.readAsDataURL(changeEvent.target.files[0]);
+            });
+        }
+    }
+}]);
+
 app.run(function ($confirmModalDefaults) {
     $confirmModalDefaults.templateUrl = 'views/addImage.html';
     $confirmModalDefaults.defaultLabels.title = 'Modal Title';
@@ -39,13 +78,6 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
         log('not supported!');
         return;
     }
-    var qs = localStorageService.get('user');
-    console.log(qs)
-    if (!qs || !qs.UserID) {
-        showLoginForm();
-        return;
-    } else
-        onUserLoginSuccess();
     $scope.canStream = false;
     $scope.isStreaming = false;
     $scope.listUsers = [];
@@ -56,6 +88,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
         manager: 28
     };
     $scope.chats = [];
+    $scope.questions = [];
     $scope.waitingStream = {
         imageUrl: 'http://mpc.edu.vn/f/img/logo.png',
         videoId: 'sMKoNBRZM1M',
@@ -64,6 +97,17 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
             autoplay: 1
         }
     }
+    var qs = localStorageService.get('user');
+    if (!qs || !qs.UserID) {
+        showLoginForm();
+    } else
+        onUserLoginSuccess();
+
+    function onViewOnlyMode() {
+        $scope.isViewOnly = true;
+        connect($scope.currentRoom, {UserId: 0, UserName: 'Khách_' + Date.now()})
+    }
+
     function onUserLoginSuccess() {
         var userDefered = $q.defer();
         log('check user info');
@@ -139,13 +183,35 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
             oldData: $scope.waitingStream
         }, {
             controller: 'addImage.controller',
-            template: 'views/addImage.html'
+            templateUrl: 'views/addImage.html'
         }).then(function (result) {
             SendPeerMessageToUsers('SetWaitingStreamImage', result);
             angular.extend($scope.waitingStream, result);
         })
+    };
+
+    $scope.sendQuestion = function () {
+        $confirm({
+        },{
+            controller: 'sendQuestion.controller',
+            templateUrl: 'views/sendQuestion.html'
+        }).then(function (result) {
+            $scope.questions= [];
+            getListQuestions();
+        })
+    };
+
+    $scope.viewQuestion = function (question) {
+        $confirm({
+            question: question
+        },{
+            controller: 'viewQuestion.controller',
+            templateUrl: 'views/viewQuestion.html'
+        }).then(function (result) {
+        })
     }
     $scope.isAdmin = isAdmin;
+
 
     function showLoginForm() {
         $confirm({}, {
@@ -155,10 +221,21 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
             backdrop: false,
         }).then(function (rs) {
             qs = localStorageService.get('user');
-            onUserLoginSuccess();
+            if (!qs)
+                onViewOnlyMode();
+            else
+                onUserLoginSuccess();
         }, function () {
             showLoginForm();
         });
+    }
+
+    function getListQuestions() {
+        userService.listQuestions({}).success(function (result) {
+            result.forEach(function (item) {
+                $scope.questions.push(item);
+            });
+        })
     }
 
     function disable(domId) {
@@ -255,7 +332,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
                     SendPeerMessageToUser(who, "IAMAdmin", null)
                 return;
             case "IAMAdmin":
-                if (!isConnected)
+                if (isConnected && !$scope.isStreaming)
                     callToAdmin(who)
                 return;
             case "SetWaitingStreamImage":
@@ -338,7 +415,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     function convertListToButtons(roomName, occupants, isPrimary) {
         $scope.listUsers = occupants;
         $scope.$apply();
-        if (!isAdmin() && !isConnected) {
+        if (!isAdmin() && isConnected && !$scope.isStreaming) {
             SendPeerMessageToUsers('WhoIsAdmin', null);
         }
     }
@@ -357,10 +434,12 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     function performCall(targetEasyrtcId) {
         var acceptedCB = function (accepted, easyrtcid) {
             if (!accepted) {
+                log('call rehected');
                 easyrtc.showError("CALL-REJECTED", "Sorry, your call to " + easyrtc.idToName(easyrtcid) + " was rejected");
                 enable('otherClients');
             }
             else {
+                log('call accepted')
                 $scope.$apply(function () {
                     $scope.isStreaming = true;
                 })
@@ -370,11 +449,13 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
         };
 
         var successCB = function () {
+            log('call successfull')
             isConnected = true;
             show('hangupButton');
         };
         var failureCB = function () {
             enable('otherClients');
+            log('call failed')
         };
         var keys = easyrtc.getLocalMediaIds();
 
@@ -391,9 +472,11 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
         show("disconnectButton");
         enable('otherClients');
         selfEasyrtcid = easyrtcid;
-
+        log('connect to rtc success')
         $scope.$apply(function () {
+            isConnected = true;
             $scope.canStream = true;
+            getListQuestions();
         });
     }
 
@@ -462,9 +545,9 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
 
     easyrtc.setAcceptChecker(function (easyrtcid, callback) {
         otherEasyrtcid = easyrtcid;
-        if (easyrtc.getConnectionCount() > 0) {
-            easyrtc.hangupAll();
-        }
+        // if (easyrtc.getConnectionCount() > 0) {
+        //     easyrtc.hangupAll();
+        // }
         callback(true, easyrtc.getLocalMediaIds());
     });
 

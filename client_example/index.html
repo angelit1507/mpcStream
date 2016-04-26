@@ -41,7 +41,6 @@
             <section class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav">
                     <li class="active"><a href="#">Link <span class="sr-only">(current)</span></a></li>
-                    <li><a href="#">{{isAdmin()}}</a></li>
                     <li class="dropdown" ng-show="isAdmin()">
                         <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
                            aria-expanded="false">Stream <span class="caret"></span></a>
@@ -57,6 +56,7 @@
                             <li><a href="#">Danh sách câu hỏi</a></li>
                         </ul>
                     </li>
+                    <li><a ng-click="sendQuestion()">Gửi câu hỏi</a></li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     <li><a href="#">Link</a></li>
@@ -129,19 +129,21 @@
                                    player-vars="waitingStream.playerVars"></youtube-video>
                 </div>
             </section>
-            <section class="panel">
+            <section class="panel question_panel">
                 <section class="panel_title">
                     <span class="title_left">Câu hỏi</span>
                     <span class="title_right"><i class="fa fa-plus"></i></span>
                 </section>
-                <section class="panel_body ">
-                    <h4>Quốc Phong Vương</h4>
-                    <div class="media">
-                        <div class="media-left">
-                            <img src="http://mpc.edu.vn/f/img/u28/admin" height="40" alt="...">
-                        </div>
-                        <div class="media-body">
-                            <p>Con đường học vấn sẽ là con đường bền vững nhất dẫn đến thành công</p>
+                <section class="panel_body panel_scroll">
+                    <div ng-repeat="q in questions" ng-click="viewQuestion(q)" class="question_item">
+                        <h4>{{q.Title}}</h4>
+                        <div class="media">
+                            <div class="media-left">
+                                <img ng-src="http://mpc.edu.vn/f/img/u{{q.UserID}}" err-src="http://mpc.edu.vn/f/img/logo.png"  height="40" alt="...">
+                            </div>
+                            <div class="media-body">
+                                <p>{{q.Content}}</p>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -175,9 +177,7 @@
                                     </li>
                                 </ul>
                             </section>
-                            <section role="tabpanel" class="tab-pane" id="profile">...</section>
-                            <section role="tabpanel" class="tab-pane" id="messages">...</section>
-                            <section role="tabpanel" class="tab-pane" id="settings">...</section>
+
                         </section>
                     </section>
                 </section>
@@ -187,7 +187,8 @@
                             <textarea class="form-control" ng-model="chatInput"
                                       placeholder="Enter your messages"></textarea>
 								<span class="input-group-btn">
-									<input type="button" class="btn btn-info" id="chat_submit" ng-click="onSendChat();"
+									<input type="button" class="btn btn-info" id="chat_submit"
+                                           ng-click="!isViewOnly && onSendChat();"
                                            value="Send">
 								</span>
                         </section>
@@ -218,9 +219,10 @@
 <script src="https://www.youtube.com/iframe_api"></script>
 <script type="text/javascript" src="public/angular-youtube-embed-master/src/angular-youtube-embed.js"></script>
 <script type="text/javascript" src="bower_components/angular-local-storage/dist/angular-local-storage.min.js"></script>
-
 <script type="text/javascript" src="js/index.js"></script>
 <script type="text/javascript" src="js/addImage.controller.js"></script>
+<script type="text/javascript" src="js/sendQuestion.controller.js"></script>
+<script type="text/javascript" src="js/viewQuestion.controller.js"></script>
 <script type="text/javascript" src="js/login.controller.js"></script>
 </body>
 </html>
