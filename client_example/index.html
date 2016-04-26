@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="vi" prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb#" ng-app="mpcStream">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Class Room Free</title>
+    <link rel="profile" href="http://gmpg.org/xfn/11">
+    <link rel="stylesheet" type="text/css" href="public/css/reset.css">
+    <link rel="stylesheet" type="text/css" href="public/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="public/bootstrap/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" type="text/css" href="public/font-awesome-4.5.0/css/font-awesome.min.css">
+
+
+    <link rel="stylesheet" type="text/css" href="public/css/style.css">
+
+    <link rel="stylesheet" type="text/css" href="bower_components/angular-bootstrap/ui-bootstrap-csp.css">
+    <link rel="stylesheet" type="text/css" href="bower_components/angular-youtube-embed/dist/angular-youtube-embed.css">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+<body ng-controller="mainController">
+<header class="header" id="header">
+    <nav class="navbar navbar-default navbar-inverse navbar-static-top">
+        <section class="container-fluid">
+            <section class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                        data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">Mpc.edu.vn</a>
+            </section>
+            <section class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li class="active"><a href="#">Link <span class="sr-only">(current)</span></a></li>
+                    <li><a href="#">{{isAdmin()}}</a></li>
+                    <li class="dropdown" ng-show="isAdmin()">
+                        <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                           aria-expanded="false">Stream <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li ng-class="{'disabled': !canStream || isStreaming}"><a ng-click="startStream()">Bắt đầu
+                                phát</a></li>
+                            <li ng-class="{'disabled': canStream && !isStreaming}"><a ng-click="stopStream()">Dừng
+                                phát</a></li>
+                            <li ng-class="{'disabled': !canStream || isStreaming}"><a ng-click="setStreamWaiting()">Chọn
+                                ảnh - nhạc chờ</a></li>
+                            <li role="separator" class="sectionider"></li>
+                            <li role="separator" class="sectionider"></li>
+                            <li><a href="#">Danh sách câu hỏi</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a href="#">Link</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                           aria-expanded="false">Dropdown <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#">Action</a></li>
+                            <li><a href="#">Another action</a></li>
+                            <li><a href="#">Something else here</a></li>
+                            <li role="separator" class="sectionider"></li>
+                            <li><a href="#">Separated link</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+        </section>
+    </nav>
+</header>
+<section class="body-wrapper" id="body-wrapper">
+    <section class="container-fluid full-width">
+        <section class="left">
+            <section class="panel user_panel">
+                <section class="panel_title">
+                    <span class="title_left">Đang trực tuyến</span>
+                    <span class="title_right"><i class="fa fa-minus"></i></span>
+                </section>
+                <section class="panel_body panel_scroll">
+                    <table class="table table-bordered table-condensed">
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-repeat="user in listUsers">
+                            <td><i class="fa fa-user"></i></td>
+                            <td>{{user.username}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </section>
+            </section>
+
+            <section class="panel video_panel">
+                <section class="panel_title">
+                    <span class="title_left">Người thực hiện</span>
+                    <span class="title_right"><i class="fa fa-minus"></i></span>
+                </section>
+                <section class="panel_body ">
+                    <h4>Quốc Phong Vương</h4>
+                    <div class="media">
+                        <div class="media-left">
+                            <img src="http://mpc.edu.vn/f/img/u28/admin" height="40" alt="...">
+                        </div>
+                        <div class="media-body">
+                            <p>Con đường học vấn sẽ là con đường bền vững nhất dẫn đến thành công</p>
+                        </div>
+                    </div>
+                </section>
+            </section>
+        </section>
+        <section class="center">
+            <section class="panel">
+                <div id="videoStream" ng-show="isStreaming"></div>
+                <div id="waitingStream" ng-show="!isStreaming" class="panel_body">
+                    <img ng-src="{{waitingStream.imageUrl}}"/>
+                    <youtube-video player="waitingPlayer" style="display: none" video-id="waitingStream.videoId"
+                                   player-vars="waitingStream.playerVars"></youtube-video>
+                </div>
+            </section>
+            <section class="panel">
+                <section class="panel_title">
+                    <span class="title_left">Câu hỏi</span>
+                    <span class="title_right"><i class="fa fa-plus"></i></span>
+                </section>
+                <section class="panel_body ">
+                    <h4>Quốc Phong Vương</h4>
+                    <div class="media">
+                        <div class="media-left">
+                            <img src="http://mpc.edu.vn/f/img/u28/admin" height="40" alt="...">
+                        </div>
+                        <div class="media-body">
+                            <p>Con đường học vấn sẽ là con đường bền vững nhất dẫn đến thành công</p>
+                        </div>
+                    </div>
+                </section>
+            </section>
+        </section>
+        <section class="right">
+            <section class="panel chat_panel">
+                <section class="panel_title">
+                    <span class="title_left">Chat</span>
+                    <span class="title_right"><i class="fa fa-minus"></i></span>
+                </section>
+                <section class="panel_body">
+                    <section>
+                        <!-- Nav tabs -->
+                        <ul class="nav nav-tabs" role="tablist">
+                            <li role="presentation" class="active"><a href="#home" aria-controls="home" role="tab"
+                                                                      data-toggle="tab">Home</a></li>
+                            <li role="presentation"><a href="#profile" aria-controls="profile" role="tab"
+                                                       data-toggle="tab">Profile</a></li>
+                            <li role="presentation"><a href="#messages" aria-controls="messages" role="tab"
+                                                       data-toggle="tab">Messages</a></li>
+                            <li role="presentation"><a href="#settings" aria-controls="settings" role="tab"
+                                                       data-toggle="tab">Settings</a></li>
+                        </ul>
+                        <!-- Tab panes -->
+                        <section class="tab-content">
+                            <section role="tabpanel" class="tab-pane active" id="home">
+                                <ul class="list-group">
+                                    <li ng-repeat="chat in chats" class="list-group-item">
+                                        <b>{{listUsers[chat.id].username || 'Me'}}</b> - {{chat.content}}
+                                    </li>
+                                </ul>
+                            </section>
+                            <section role="tabpanel" class="tab-pane" id="profile">...</section>
+                            <section role="tabpanel" class="tab-pane" id="messages">...</section>
+                            <section role="tabpanel" class="tab-pane" id="settings">...</section>
+                        </section>
+                    </section>
+                </section>
+                <section class="panel_footer">
+                    <form action="" method="">
+                        <section class="input-group">
+                            <textarea class="form-control" ng-model="chatInput"
+                                      placeholder="Enter your messages"></textarea>
+								<span class="input-group-btn">
+									<input type="button" class="btn btn-info" id="chat_submit" ng-click="onSendChat();"
+                                           value="Send">
+								</span>
+                        </section>
+                    </form>
+                </section>
+            </section>
+        </section>
+    </section>
+</section>
+<footer class="footer" id="footer">
+    <section class="container-fluid">
+        <p class="copyright">Copyright © 2015 Beeone.vn. All Rights Reserved.</p>
+    </section>
+</footer>
+<!-- Scripts -->
+<script type="text/javascript" src="public/jQuery/jquery-2.2.1.min.js"></script>
+<script type="text/javascript" src="public/bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="public/js/default.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script type="text/javascript" src="/easyrtc/easyrtc.js"></script>
+
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular.min.js"></script>
+<script type="text/javascript"
+        src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular-route.min.js"></script>
+
+<script type="text/javascript" src="bower_components/angular-bootstrap/ui-bootstrap-tpls.js"></script>
+<script type="text/javascript" src="bower_components/angular-confirm-modal/angular-confirm.min.js"></script>
+<script src="https://www.youtube.com/iframe_api"></script>
+<script type="text/javascript" src="public/angular-youtube-embed-master/src/angular-youtube-embed.js"></script>
+<script type="text/javascript" src="bower_components/angular-local-storage/dist/angular-local-storage.min.js"></script>
+
+<script type="text/javascript" src="js/index.js"></script>
+<script type="text/javascript" src="js/addImage.controller.js"></script>
+<script type="text/javascript" src="js/login.controller.js"></script>
+</body>
+</html>

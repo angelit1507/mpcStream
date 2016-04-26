@@ -1,0 +1,31 @@
+{
+  "name": "mpcStream",
+  "version": "1.0.15",
+  "homepage": "http://www.92shares.com/",
+  "author": "angelit1507@gmail.com",
+  "description": "voice chat with multiple room access",
+  "contributors": [
+    "Angel iT <angelit1507@gmail.com>"
+  ],
+  "keywords": [
+    "webRTC"
+  ],
+  "main": "index",
+  "dependencies": {
+    "async": "0.2.x",
+    "body-parser": "^1.15.0",
+    "colors": "*",
+    "crypto": "0.0.3",
+    "mysql": "^2.10.2",
+    "underscore": "1.5.x"
+  },
+  "analyze": false,
+  "license": "MIT",
+  "engines": {
+    "node": ">=0.8"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
