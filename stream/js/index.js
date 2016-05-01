@@ -5,13 +5,18 @@ var otherEasyrtcid = null;
 isConnected = false;
 
 
-var app = angular.module('mpcStream', ['ngRoute', 'ui.bootstrap', 'angular-confirm', 'youtube-embed', 'LocalStorageModule']);
+var app = angular.module('mpcStream', ['ngRoute', 'ui.bootstrap', 'angular-confirm', 'youtube-embed', 'LocalStorageModule', 'toaster', 'ngAnimate']);
 app.config(function (localStorageServiceProvider) {
     localStorageServiceProvider
         .setPrefix('mpc');
 });
-app.factory('userService', ['$http', function ($http) {
+app.factory('userService', ['$http', 'localStorageService', function ($http, localStorageService) {
     var api = '/'
+    var currentRoom = {
+        room_id: 1,
+        room_slug: 'mpcStream',
+        manager: 28
+    };
     return {
         getUserInfo: function (id) {
             return $http.get(api + 'getuser/' + id);
@@ -27,6 +32,16 @@ app.factory('userService', ['$http', function ($http) {
         },
         sendQuestion: function (question) {
             return $http.post(api + 'sendQuestion', question);
+        },
+        deleteQuestion: function (id) {
+            return $http.post(api + 'deleteQuestion', {id: id});
+        },
+        currentRoom: currentRoom,
+        isAdmin: function isAdmin() {
+            var user = localStorageService.get('user');
+            if (user == null || user.UserID != currentRoom.manager)
+                return false;
+            return true;
         }
     }
 }])
@@ -64,15 +79,15 @@ app.directive("fileread", [function () {
 }]);
 
 app.run(function ($confirmModalDefaults) {
-    $confirmModalDefaults.templateUrl = 'views/addImage.html';
-    $confirmModalDefaults.defaultLabels.title = 'Modal Title';
+    // $confirmModalDefaults.templateUrl = 'views/addImage.html';
+    // $confirmModalDefaults.defaultLabels.title = 'Modal Title';
     $confirmModalDefaults.defaultLabels.ok = 'Có';
     $confirmModalDefaults.defaultLabels.cancel = 'Không';
 })
 app.controller('mainController', mainController);
 
-mainController.$inject = ['$scope', 'userService', '$location', '$q', '$confirm', 'localStorageService'];
-function mainController($scope, userService, $location, $q, $confirm, localStorageService) {
+mainController.$inject = ['$scope', 'userService', '$location', '$q', '$confirm', 'localStorageService', 'toaster', '$filter'];
+function mainController($scope, userService, $location, $q, $confirm, localStorageService, toaster, $filter) {
     console.log('new connect');
     if (!localStorageService.isSupported) {
         log('not supported!');
@@ -82,11 +97,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     $scope.isStreaming = false;
     $scope.listUsers = [];
     $scope.currentUser = {};
-    $scope.currentRoom = {
-        room_id: 1,
-        room_slug: 'mpcStream',
-        manager: 28
-    };
+    $scope.currentRoom = userService.currentRoom;
     $scope.chats = [];
     $scope.questions = [];
     $scope.waitingStream = {
@@ -97,6 +108,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
             autoplay: 1
         }
     }
+    $scope.currentQuestion = {};
     var qs = localStorageService.get('user');
     if (!qs || !qs.UserID) {
         showLoginForm();
@@ -109,6 +121,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     }
 
     function onUserLoginSuccess() {
+        $scope.isLoggedIn = true;
         var userDefered = $q.defer();
         log('check user info');
         userService.getUserInfo(qs.UserID).success(function (user) {
@@ -131,12 +144,19 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     $scope.onSendChat = function () {
         if (!isConnected)
             return;
-        $scope.chats.push({
-            id: selfEasyrtcid,
-            content: $scope.chatInput
-        });
-        SendPeerMessageToUsers("Chat", $scope.chatInput);
+        var chat = {
+            id: Date.now(),
+            userRtcId: selfEasyrtcid,
+            content: $scope.chatInput,
+            userId: $scope.currentUser.UserID
+        };
+        $scope.chats.push(chat);
+        SendPeerMessageToUsers("Chat", chat);
         $scope.chatInput = '';
+    }
+    $scope.deleteChat = function (chat, index) {
+        SendPeerMessageToUsers("Chat_Delete", chat);
+        $scope.chats.splice(index, 1);
     }
 
     $scope.startStream = function () {
@@ -191,26 +211,52 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     };
 
     $scope.sendQuestion = function () {
-        $confirm({
-        },{
+        $confirm({}, {
             controller: 'sendQuestion.controller',
             templateUrl: 'views/sendQuestion.html'
         }).then(function (result) {
-            $scope.questions= [];
+            $scope.questions = [];
             getListQuestions();
         })
     };
 
+
+    $scope.isAdmin = isAdmin;
+    $scope.listQuestions = function () {
+        $confirm({}, {
+            controller: 'listQuestion.controller',
+            templateUrl: 'views/listQuestion.html'
+        }).then(function (result) {
+            if (!result)
+                return;
+            SendPeerMessageToUsers("SetStreamQuestion", result);
+            $scope.currentQuestion = result;
+            toaster.pop('success', 'Câu hỏi đã được hiện ở trang chủ!');
+        })
+    };
     $scope.viewQuestion = function (question) {
         $confirm({
             question: question
-        },{
+        }, {
             controller: 'viewQuestion.controller',
             templateUrl: 'views/viewQuestion.html'
         }).then(function (result) {
         })
     }
-    $scope.isAdmin = isAdmin;
+    $scope.logout = function () {
+        localStorageService.remove('user');
+        disconnect();
+    }
+    $scope.showLoginForm = showLoginForm;
+    $scope.viewUser = function (id) {
+        $confirm({
+            id: id
+        }, {
+            controller: 'viewUser.controller',
+            templateUrl: 'views/viewUser.html'
+        }).then(function (result) {
+        })
+    }
 
 
     function showLoginForm() {
@@ -228,14 +274,6 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
         }, function () {
             showLoginForm();
         });
-    }
-
-    function getListQuestions() {
-        userService.listQuestions({}).success(function (result) {
-            result.forEach(function (item) {
-                $scope.questions.push(item);
-            });
-        })
     }
 
     function disable(domId) {
@@ -341,19 +379,34 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
                     // waitingPlayer.playVideo();
                 })
                 return;
+            case "SetStreamQuestion":
+                $scope.$apply(function () {
+                    $scope.currentQuestion = content;
+                })
+                return;
+            case "Chat_Delete":
+                $scope.$apply(function () {
+                    var chats = $filter('filter')($scope.chats, {id: content.id});
+                    chats.forEach(function (c) {
+                        var index = $scope.chats.indexOf(c);
+                        $scope.chats.splice(index, 1)
+                    })
+                })
+                return;
         }
-        $scope.chats.push({
-            id: who,
-            content: content
-        });
+        content.from = who;
+        $scope.chats.push(content);
         $scope.$apply();
-        // // Escape html special characters, then add linefeeds.
-        // content = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        // content = content.replace(/\n/g, '<br />');
-        // console.log(content);
     }
 
     function connect(room, user) {
+        if (isConnected) {
+            log('already connected!');
+            if (!$scope.isViewOnly) {
+                easyrtc.setUsername(user.UserName);
+            }
+            return;
+        }
         log("Initializing.");
         easyrtc.setPeerListener(receivePeerMessage);
         // audio only
@@ -400,7 +453,6 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     function hangup() {
         easyrtc.hangupAll();
         hide('hangupButton');
-        isConnected = false;
     }
 
 
@@ -440,9 +492,6 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
             }
             else {
                 log('call accepted')
-                $scope.$apply(function () {
-                    $scope.isStreaming = true;
-                })
                 stopWaitingVideo();
                 otherEasyrtcid = targetEasyrtcId;
             }
@@ -476,14 +525,12 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
         $scope.$apply(function () {
             isConnected = true;
             $scope.canStream = true;
-            getListQuestions();
         });
     }
 
     function SendPeerMessageToUsers(msgType, data) {
         for (var user in $scope.listUsers) {
             SendPeerMessageToUser(user, msgType, data);
-
         }
     }
 
@@ -504,12 +551,12 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
 
 
     function disconnect() {
-        document.getElementById("iam").innerHTML = "logged out";
+        //document.getElementById("iam").innerHTML = "logged out";
         easyrtc.disconnect();
         show("connectButton");
         //    disable("disconnectButton");
-        clearConnectList();
-        easyrtc.setVideoObjectSrc(document.getElementById('selfVideo'), "");
+        //clearConnectList();
+        //easyrtc.setVideoObjectSrc(document.getElementById('selfVideo'), "");
     }
 
     easyrtc.setStreamAcceptor(function (easyrtcid, stream, streamName) {

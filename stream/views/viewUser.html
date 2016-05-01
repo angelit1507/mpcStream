@@ -1,0 +1,19 @@
+<div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span>
+    </button>
+    <h4 class="modal-title">Thông tin thành viên</h4>
+</div>
+<div class="modal-body">
+    <form name="form">
+        <div class="form-group">
+            <b>Tên: </b> {{user.UserName}}
+        </div>
+        <div class="form-group" ng-if="isAdmin()">
+            <span ng-click="banChatOfUser()" class="btn btn-sm btn-warning">Cấm chat</span>
+            <span ng-click="banStreamOfUser()" class="btn btn-sm btn-danger">Cấm xem stream</span>
+        </div>
+    </form>
+</div>
+<div class="modal-footer">
+    <button type="button" ng-click="$dismiss()" class="btn btn-default" >Đóng</button>
+</div>

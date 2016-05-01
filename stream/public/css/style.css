@@ -175,12 +175,14 @@ body {
     font-size: 0.82em;
     font-weight: bold;
 }
-#videoStream video{
+
+#videoStream video {
     width: 100%;
     overflow: hidden;
     display: block;
     margin: 0px auto;
 }
+
 #waitingStream img {
     height: 66.5vh;
     overflow: hidden;
@@ -188,10 +190,25 @@ body {
     margin: 0px auto;
 }
 
-.question_panel{
+.question_panel {
     height: 19.8%;
 }
-.question_panel .question_item{
+
+.questions {
+    height: 400px;
+    overflow-x: hidden;
+    overflow-y: scroll;
+}
+
+.questions .question_item {
     border-bottom: 1px solid #ccc;
     padding-bottom: 10px;
+}
+
+.btn-remove-chat {
+    display: none;
+}
+
+.chat_panel .list-group-item:hover .btn-remove-chat {
+    display: block;
 }

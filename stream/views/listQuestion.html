@@ -1,0 +1,28 @@
+<div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span>
+    </button>
+    <h4 class="modal-title">Câu hỏi</h4>
+</div>
+<div class="modal-body">
+    <div class="questions">
+        <div ng-repeat="q in questions" class="question_item">
+            <h4>{{q.Title}}</h4>
+            <div class="media">
+                <div class="media-left">
+                    <img ng-src="http://mpc.edu.vn/f/img/u{{q.UserID}}" err-src="http://mpc.edu.vn/f/img/logo.png"
+                         height="40" alt="...">
+                </div>
+                <div class="media-body">
+                    <p>{{q.Content}}</p>
+                    <span class="btn btn-primary btn-xs" ng-click="setStreamQuestion(q)">Hiện trên trang stream</span>
+                    <span class="btn btn-info btn-xs" ng-click="viewQuestion(q)">Chi tiết</span>
+                    <span class="btn btn-danger btn-xs" ng-click="deleteQuestion(q, $index)" confirm="Bạn có chắc muốn xóa câu hỏi này?">Xóa</span>
+                    <span class="pull-right">{{q.CreatedAt | date}}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" ng-click="$dismiss()" class="btn btn-default">Đóng</button>
+</div>

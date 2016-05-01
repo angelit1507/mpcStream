@@ -128,8 +128,8 @@ connection.sendQuestion = function (question, callback) {
     var now = new Date(); // 2016-03-03 00:00:00.000
     var created = now.getFullYear() + '-' + now.getMonth() + '-' + now.getDay() + ' ' + now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds() + '.' + now.getMilliseconds();
     console.log(question.Content);
-    var request = new Request("INSERT INTO Stream_Questions (UserID, Title, Content, Image, IsDeleted, CreatedAt) VALUES (" + question.UserID + ",'"
-        + question.Title + "','"
+    var request = new Request("INSERT INTO Stream_Questions (UserID, Title, Content, Image, IsDeleted, CreatedAt) VALUES (" + question.UserID + ",N'"
+        + question.Title + "',N'"
         + question.Content + "','"
         + question.Image + "',"
         + "'false','"
@@ -143,5 +143,17 @@ connection.sendQuestion = function (question, callback) {
     });
     connection.execSql(request);
 }
+
+connection.deleteQuestion = function (id, callback) {
+    var request = new Request("DELETE FROM Stream_Questions WHERE Stream_QuestionID=" + id, function (err, rowsCount) {
+        if (err) {
+            console.log(err);
+            callback(err);
+        }
+        callback(null);
+    });
+    connection.execSql(request);
+}
+
 
 module.exports = connection;
