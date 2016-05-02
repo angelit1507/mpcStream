@@ -83,8 +83,8 @@ httpApp.post('/deleteQuestion/', function (req, res) {
 
 
 // Start Express https server on port 8443
-// var webServer = https.createServer(options, httpApp).listen(443, '14.0.24.9');
-var webServer = https.createServer(options, httpApp).listen(443);
+var webServer = https.createServer(options, httpApp).listen(443, '14.0.24.9');
+//var webServer = https.createServer(options, httpApp).listen(443);
 // Start Socket.io so it attaches itself to Express server
 var socketServer = io.listen(webServer, {"log level": 1});
 

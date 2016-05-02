@@ -102,11 +102,12 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     $scope.questions = [];
     $scope.waitingStream = {
         imageUrl: 'http://mpc.edu.vn/f/img/logo.png',
-        videoId: 'sMKoNBRZM1M',
+        videoIds: ['sMKoNBRZM1M'],
         playerVars: {
             controls: 0,
             autoplay: 1
-        }
+        },
+        currentVideoId: 'sMKoNBRZM1M'
     }
     $scope.currentQuestion = {};
     var qs = localStorageService.get('user');
@@ -209,6 +210,17 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
             angular.extend($scope.waitingStream, result);
         })
     };
+
+    $scope.$on('youtube.player.ended', function ($event, player) {
+        var index = $scope.waitingStream.videoIds.indexOf($scope.waitingStream.currentVideoId);
+        if (index >= 0 && $scope.waitingStream.videoIds.length > index + 1) {
+            $scope.waitingStream.currentVideoId = $scope.waitingStream.videoIds[index + 1];
+        }else
+        {
+            $scope.waitingStream.currentVideoId = $scope.waitingStream.videoIds[0];
+        }
+        player.playVideo();
+    });
 
     $scope.sendQuestion = function () {
         $confirm({}, {
@@ -370,12 +382,16 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
                     SendPeerMessageToUser(who, "IAMAdmin", null)
                 return;
             case "IAMAdmin":
+                log('get waiting image...');
+                SendPeerMessageToUser(who, "GetWaitingStreamData");
                 if (isConnected && !$scope.isStreaming)
                     callToAdmin(who)
                 return;
             case "SetWaitingStreamImage":
                 $scope.$apply(function () {
                     $scope.waitingStream = content;
+                    if ($scope.waitingStream.videoIds.length > 0)
+                        $scope.waitingStream.currentVideoId = $scope.waitingStream.videoIds[0];
                     // waitingPlayer.playVideo();
                 })
                 return;
@@ -383,6 +399,9 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
                 $scope.$apply(function () {
                     $scope.currentQuestion = content;
                 })
+                return;
+            case "GetWaitingStreamData":
+                SendPeerMessageToUser(who, "SetWaitingStreamImage", $scope.waitingStream);
                 return;
             case "Chat_Delete":
                 $scope.$apply(function () {

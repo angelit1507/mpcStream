@@ -118,8 +118,8 @@
             <section class="panel">
                 <div id="videoStream" ng-show="isStreaming"></div>
                 <div id="waitingStream" ng-show="!isStreaming" class="panel_body">
-                    <img ng-src="{{waitingStream.imageUrl}}"/>
-                    <youtube-video player="waitingPlayer" style="display: none" video-id="waitingStream.videoId"
+                    <img ng-src="{{waitingStream.imageUrl}}" width="100%" height="100%"/>
+                    <youtube-video player="waitingPlayer" style="display: none" video-id="waitingStream.currentVideoId"
                                    player-vars="waitingStream.playerVars"></youtube-video>
                 </div>
             </section>

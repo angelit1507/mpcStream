@@ -8,9 +8,15 @@
         <div class="form-group">
             <input type="url" class="form-control" ng-required="true" placeholder="link ảnh" ng-model="imageUrl"/>
         </div>
-        <div class="form-group">
-            <input type="text" class="form-control" ng-required="true" placeholder="link video" ng-model="videoId"/>
+        <div class="form-group"  ng-repeat="video in videoIds track by $index">
+            <div class="input-group">
+                <input type="text" class="form-control" ng-required="true" placeholder="video id" ng-change="updateVideoId(video, $index)" ng-model="video"/>
+                <span class="input-group-addon btn btn-danger" ng-click="removeVideo($index)">
+                    Xóa
+                </span>
+            </div>
         </div>
+        <span class="btn btn-xs btn-info" ng-click="addVideo();">Thêm</span>
     </form>
 </div>
 <div class="modal-footer">

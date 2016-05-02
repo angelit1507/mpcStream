@@ -128,12 +128,11 @@ connection.sendQuestion = function (question, callback) {
     var now = new Date(); // 2016-03-03 00:00:00.000
     var created = now.getFullYear() + '-' + now.getMonth() + '-' + now.getDay() + ' ' + now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds() + '.' + now.getMilliseconds();
     console.log(question.Content);
-    var request = new Request("INSERT INTO Stream_Questions (UserID, Title, Content, Image, IsDeleted, CreatedAt) VALUES (" + question.UserID + ",N'"
+    var request = new Request("INSERT INTO Stream_Questions (UserID, Title, Content, Image, IsDeleted) VALUES (" + question.UserID + ",N'"
         + question.Title + "',N'"
         + question.Content + "','"
         + question.Image + "',"
-        + "'false','"
-        + created + "');", function (err, rowsCount, rows) {
+        + "'false');", function (err, rowsCount, rows) {
         if (err) {
             console.log(err);
             callback(err);

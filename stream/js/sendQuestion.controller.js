@@ -21,7 +21,11 @@ function sendQuestionController($scope, data, userService, localStorageService,t
         }
         isDisabled = true;
         userService.sendQuestion($scope.question)
-            .success(function () {
+            .success(function (rs) {
+                if(rs.code){
+                    toaster.pop('error', 'Lỗi khi gửi câu hỏi!');
+                    return;
+                }
                 toaster.pop('success', 'Gửi câu hỏi thành công!');
                 $scope.$close({});
             })
