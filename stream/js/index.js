@@ -118,11 +118,14 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
 
     function onViewOnlyMode() {
         $scope.isViewOnly = true;
-        connect($scope.currentRoom, {UserId: 0, UserName: 'Khách_' + Date.now()})
+        $scope.isLoggedIn = false;
+        $scope.currentUser  = {UserId: 0, UserName: 'Khách_' + Date.now()};
+        connect($scope.currentRoom, $scope.currentUser);
     }
 
     function onUserLoginSuccess() {
         $scope.isLoggedIn = true;
+        $scope.isViewOnly = false;
         var userDefered = $q.defer();
         log('check user info');
         userService.getUserInfo(qs.UserID).success(function (user) {
@@ -257,7 +260,9 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     }
     $scope.logout = function () {
         localStorageService.remove('user');
-        disconnect();
+        hangup();
+        $scope.currentUser = null;
+        showLoginForm();
     }
     $scope.showLoginForm = showLoginForm;
     $scope.viewUser = function (id) {
