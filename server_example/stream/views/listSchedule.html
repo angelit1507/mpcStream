@@ -1,0 +1,58 @@
+<div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span>
+    </button>
+    <h4 class="modal-title">Lịch stream</h4>
+</div>
+<div class="modal-body">
+    <form name="form" ng-show="isAdmin()">
+        <div class="row">
+            <div class="col-md-5">
+                <div class="form-group">
+                    <div style="display:inline-block; min-height:290px;">
+                        <uib-datepicker ng-model="schedule.StreamTime" class="well well-sm" datepicker-options="options"></uib-datepicker>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-7">
+                <uib-timepicker ng-model="time" ng-change="changed()" hour-step="1" minute-step="10" show-meridian="ismeridian"></uib-timepicker>
+                <div class="form-group">
+                    <input type="text" class="form-control" ng-required="true" placeholder="Tiêu đề"
+                           ng-model="schedule.Title"/>
+                </div>
+                <div class="form-group">
+                    <input type="text" class="form-control" ng-required="true" placeholder="Nội dung"
+                           ng-model="schedule.Content"/>
+                </div>
+                <div class="form-group">
+                    <input type="file" class="form-control" fileread="schedule.Image"/>
+                    <div class="" ng-show="schedule.Image">
+                        <br/>
+                        <a class="thumbnail">
+                            <img ng-src="{{schedule.Image}}"/>
+                        </a>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" ng-click="save()" ng-disabled="isDisabled">Thêm</button>
+            </div>
+        </div>
+    </form>
+    <div class="questions">
+        <div ng-repeat="q in data" class="question_item">
+            <h4>{{q.Title}} - bắt đầu stream sau: <span countdown date="{{q.StreamTime}}"></span></h4>
+            <div class="media">
+                <div class="media-left">
+                    <img ng-src="{{q.Image}}" err-src="http://mpc.edu.vn/f/img/logo.png"
+                         height="40">
+                </div>
+                <div class="media-body">
+                    <p>{{q.Content}}</p>
+                    <span ng-if="isAdmin()" class="btn btn-danger btn-xs" ng-click="delete(q, $index)"
+                          confirm="Bạn có chắc muốn xóa câu hỏi này?">Xóa</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" ng-click="$dismiss()" class="btn btn-default">Đóng</button>
+</div>

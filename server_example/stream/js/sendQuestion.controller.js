@@ -19,7 +19,7 @@ function sendQuestionController($scope, data, userService, localStorageService,t
             toaster.pop('error', 'Nhập đầy đủ thông tin!');
             return;
         }
-        isDisabled = true;
+        $scope.isDisabled = true;
         userService.sendQuestion($scope.question)
             .success(function (rs) {
                 if(rs.code){

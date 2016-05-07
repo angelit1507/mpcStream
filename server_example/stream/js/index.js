@@ -10,6 +10,40 @@ app.config(function (localStorageServiceProvider) {
     localStorageServiceProvider
         .setPrefix('mpc');
 });
+
+
+app.directive('countdown', ['Util', '$interval', function (Util, $interval) {
+    return{
+        restrict: 'A',
+        scope :
+        {
+            date: '@'
+        },
+        link: function(scope, element) {
+            var future = new Date(scope.date)
+            $interval(function () {
+                diff = Math.floor(future.getTime() - new Date().getTime()) / 1000
+                $(element).html(Util.dhms(diff, 1000));
+            },1000);
+        }
+    }
+}]);
+
+app.factory('Util', [function () {
+    return {
+        dhms: function (t) {
+            days = Math.floor(t / 86400);
+            t -= days * 86400;
+            hours = Math.floor(t / 3600) % 24;
+            t -= hours * 3600;
+            minutes = Math.floor(t / 60) % 60;
+            t -= minutes * 60;
+            seconds = parseInt(t % 60);
+            return [days + 'd', hours + 'h', minutes + 'm', seconds + 's'].join(' ');
+        }
+    }
+}]);
+
 app.factory('userService', ['$http', 'localStorageService', function ($http, localStorageService) {
     var api = '/'
     var currentRoom = {
@@ -35,6 +69,15 @@ app.factory('userService', ['$http', 'localStorageService', function ($http, loc
         },
         deleteQuestion: function (id) {
             return $http.post(api + 'deleteQuestion', {id: id});
+        },
+        listSchedules: function (model) {
+            return $http.post(api + 'listSchedules', {});
+        },
+        addSchedule: function (question) {
+            return $http.post(api + 'addSchedule', question);
+        },
+        deleteSchedule: function (id) {
+            return $http.post(api + 'deleteSchedule', {id: id});
         },
         currentRoom: currentRoom,
         isAdmin: function isAdmin() {
@@ -100,12 +143,13 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     $scope.currentRoom = userService.currentRoom;
     $scope.chats = [];
     $scope.questions = [];
+    $scope.needGetAdminInfo = true;
     $scope.waitingStream = {
         imageUrl: 'http://mpc.edu.vn/f/img/logo.png',
         videoIds: ['sMKoNBRZM1M'],
         playerVars: {
             controls: 0,
-            autoplay: 1
+            autoplay: 0
         },
         currentVideoId: 'sMKoNBRZM1M'
     }
@@ -119,7 +163,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     function onViewOnlyMode() {
         $scope.isViewOnly = true;
         $scope.isLoggedIn = false;
-        $scope.currentUser  = {UserId: 0, UserName: 'Khách_' + Date.now()};
+        $scope.currentUser = {UserId: 0, UserName: 'Khách_' + Date.now()};
         connect($scope.currentRoom, $scope.currentUser);
     }
 
@@ -152,7 +196,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
             id: Date.now(),
             userRtcId: selfEasyrtcid,
             content: $scope.chatInput,
-            userId: $scope.currentUser.UserID
+            user: $scope.currentUser
         };
         $scope.chats.push(chat);
         SendPeerMessageToUsers("Chat", chat);
@@ -210,21 +254,37 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
             templateUrl: 'views/addImage.html'
         }).then(function (result) {
             SendPeerMessageToUsers('SetWaitingStreamImage', result);
-            angular.extend($scope.waitingStream, result);
+            $scope.waitingStream.videoIds = result.videoIds;
+            $scope.waitingStream.imageUrl = result.imageUrl;
+
+            log('try play video')
+
+            if ($scope.waitingStream.videoIds.length > 0) {
+                if ($scope.waitingStream.currentVideoId != $scope.waitingStream.videoIds[0])
+                    $scope.waitingStream.currentVideoId = $scope.waitingStream.videoIds[0];
+            }
         })
     };
 
     $scope.$on('youtube.player.ended', function ($event, player) {
+        console.log('video end')
         var index = $scope.waitingStream.videoIds.indexOf($scope.waitingStream.currentVideoId);
         if (index >= 0 && $scope.waitingStream.videoIds.length > index + 1) {
             $scope.waitingStream.currentVideoId = $scope.waitingStream.videoIds[index + 1];
-        }else
-        {
+        } else {
             $scope.waitingStream.currentVideoId = $scope.waitingStream.videoIds[0];
         }
         player.playVideo();
     });
 
+    $scope.$on('youtube.player.ready', function ($event, player) {
+        console.log('video ready')
+        player.playVideo();
+    });
+    $scope.$on('youtube.player.paused', function ($event, player) {
+        console.log('video paused')
+        player.playVideo();
+    });
     $scope.sendQuestion = function () {
         $confirm({}, {
             controller: 'sendQuestion.controller',
@@ -249,6 +309,18 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
             toaster.pop('success', 'Câu hỏi đã được hiện ở trang chủ!');
         })
     };
+
+    $scope.listStreamSchedules = function () {
+        $confirm({}, {
+            controller: 'listStreamSchedules.controller',
+            templateUrl: 'views/listSchedule.html',
+            size: 'lg'
+        }).then(function (result) {
+
+        })
+    };
+
+
     $scope.viewQuestion = function (question) {
         $confirm({
             question: question
@@ -388,16 +460,22 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
                 return;
             case "IAMAdmin":
                 log('get waiting image...');
+                $scope.needGetAdminInfo = false;
                 SendPeerMessageToUser(who, "GetWaitingStreamData");
                 if (isConnected && !$scope.isStreaming)
                     callToAdmin(who)
                 return;
             case "SetWaitingStreamImage":
                 $scope.$apply(function () {
-                    $scope.waitingStream = content;
-                    if ($scope.waitingStream.videoIds.length > 0)
-                        $scope.waitingStream.currentVideoId = $scope.waitingStream.videoIds[0];
-                    // waitingPlayer.playVideo();
+                    $scope.waitingStream.videoIds = content.videoIds;
+                    $scope.waitingStream.imageUrl = content.imageUrl;
+
+                    log('try play video')
+
+                    if ($scope.waitingStream.videoIds.length > 0) {
+                        if ($scope.waitingStream.currentVideoId != $scope.waitingStream.videoIds[0])
+                            $scope.waitingStream.currentVideoId = $scope.waitingStream.videoIds[0];
+                    }
                 })
                 return;
             case "SetStreamQuestion":
@@ -491,7 +569,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     function convertListToButtons(roomName, occupants, isPrimary) {
         $scope.listUsers = occupants;
         $scope.$apply();
-        if (!isAdmin() && isConnected && !$scope.isStreaming) {
+        if (!isAdmin() && isConnected && !$scope.isStreaming && $scope.needGetAdminInfo) {
             SendPeerMessageToUsers('WhoIsAdmin', null);
         }
     }
@@ -516,7 +594,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
             }
             else {
                 log('call accepted')
-                stopWaitingVideo();
+                //stopWaitingVideo();
                 otherEasyrtcid = targetEasyrtcId;
             }
         };

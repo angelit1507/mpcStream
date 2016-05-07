@@ -57,6 +57,7 @@
                         </ul>
                     </li>
                     <li ng-show="!isViewOnly"><a ng-click="sendQuestion()"><span class="btn btn-xs btn-info">Gửi câu hỏi</span></a></li>
+                    <li><a ng-click="listStreamSchedules()"><span class="btn btn-xs btn-info">Lịch stream</span></a></li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     <li ng-show="isLoggedIn"><a ng-click="logout()"><span class="btn btn-xs btn-danger" >Đăng xuất</span></a></li>
@@ -153,7 +154,7 @@
                 <section class="panel_body panel_scroll">
                     <ul class="list-group">
                         <li ng-repeat="chat in chats" class="list-group-item">
-                            <b ng-click="viewUser(chat.userId);"><a>{{listUsers[chat.from].username || 'Me'}}</a></b> - {{chat.content}}
+                            <b ng-click="viewUser(chat.user.UserID);"><a>{{chat.user.UserName || 'Me'}}</a></b> - {{chat.content}}
                             <span ng-show="isAdmin()" confirm="Xác nhận xóa nội dung chat?" ng-click="deleteChat(chat, $index)" class="btn btn-xs btn-danger pull-right btn-remove-chat"><i class="fa fa-remove"></i></span>
                         </li>
                     </ul>
@@ -207,6 +208,7 @@
 <script type="text/javascript" src="js/listQuestion.controller.js"></script>
 <script type="text/javascript" src="js/viewQuestion.controller.js"></script>
 <script type="text/javascript" src="js/viewUser.controller.js"></script>
+<script type="text/javascript" src="js/listStreamSchedules.controller.js"></script>
 <script type="text/javascript" src="js/login.controller.js"></script>
 </body>
 </html>

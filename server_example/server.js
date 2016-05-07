@@ -8,9 +8,15 @@ var https = require('https');
 var fs = require('fs');
 var bodyParser = require('body-parser');
 // This line is from the Node.js HTTPS documentation.
+
+var privateKey = fs.readFileSync('privatekey.key')
+var certificate = fs.readFileSync('certificate.crt');
+// pfx: fs.readFileSync('stackviet.pfx'),
+//     passphrase: 'Test!234',
 var options = {
-    pfx: fs.readFileSync('stackviet.pfx'),
-    passphrase: 'Test!234'
+	key: privateKey,
+    cert: certificate,
+    passphrase: 'Test!234',
 };
 
 
@@ -18,7 +24,7 @@ var options = {
 var httpApp = express();
 httpApp.use(bodyParser.json({limit: '50mb'})); // support json encoded bodies
 httpApp.use(bodyParser.urlencoded({extended: true,limit: '50mb'})); // support encoded bodies
-httpApp.use(express.static(__dirname + "/static/"));
+httpApp.use(express.static(__dirname + "/stream/"));
 
 httpApp.get('/getuser/:id?', function (req, res) {
     var id = req.params.id;
@@ -80,6 +86,38 @@ httpApp.post('/deleteQuestion/', function (req, res) {
             res.send(result);
     });
 });
+
+httpApp.post('/listSchedules/', function (req, res) {
+    console.log('get list')
+    db.listSchedules({}, function (err, result) {
+        if (err)
+            res.send(err);
+        else
+            res.send(result);
+    });
+});
+httpApp.post('/addSchedule/', function (req, res) {
+    if (!req.body || !req.body.Title || !req.body.Content || !req.body.StreamTime)
+        res.json({code: 'ERROR', message: 'data is invalid!'})
+    db.addSchedule(req.body, function (err, result) {
+        if (err)
+            res.send(err);
+        else
+            res.send(result);
+    });
+});
+
+httpApp.post('/deleteSchedule/', function (req, res) {
+    if (!req.body || !req.body.id)
+        res.json({code: 'ERROR', message: 'data is invalid!'})
+    db.deleteSchedule(req.body.id, function (err, result) {
+        if (err)
+            res.send(err);
+        else
+            res.send(result);
+    });
+});
+
 
 
 // Start Express https server on port 8443
