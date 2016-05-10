@@ -86,7 +86,7 @@
                         <tbody>
                         <tr>
                             <td><i class="fa fa-user"></i></td>
-                            <td>Me</td>
+                            <td ng-click="viewUser(currentUser.UserID);">Me</td>
                         </tr>
                         <tr ng-repeat="user in listUsers">
                             <td><i class="fa fa-user"></i></td>
@@ -162,11 +162,11 @@
                 <section class="panel_footer">
                     <form action="" method="">
                         <section class="input-group">
-                            <textarea ng-disabled="isViewOnly" class="form-control" ng-model="chatInput"
+                            <textarea ng-disabled="currentUser.Stream_CanChat===false || isViewOnly" class="form-control" ng-model="chatInput"
                                       placeholder="Enter your messages"></textarea>
 								<span class="input-group-btn">
 									<input type="button" class="btn btn-info" id="chat_submit"
-                                           ng-click="!isViewOnly && onSendChat();"
+                                           ng-click="currentUser.Stream_CanChat===true && !isViewOnly && onSendChat();"
                                            value="Send">
 								</span>
                         </section>
@@ -178,7 +178,7 @@
 </section>
 <footer class="footer" id="footer">
     <section class="container-fluid">
-        <p class="copyright">Copyright © 2015 Beeone.vn. All Rights Reserved.</p>
+        <p class="copyright">Copyright © 2016 Mpc.edu.vn. All Rights Reserved.<span class="pull-right"><a href="https://www.facebook.com/alonekig">@Angel íT</a></span></p>
     </section>
 </footer>
 <toaster-container toaster-options="{'position-class': 'toast-bottom-right'}"></toaster-container>

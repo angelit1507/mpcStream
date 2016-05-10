@@ -118,6 +118,50 @@ httpApp.post('/deleteSchedule/', function (req, res) {
     });
 });
 
+httpApp.post('/banChat/', function (req, res) {
+    if (!req.body || !req.body.id)
+        res.json({code: 'ERROR', message: 'data is invalid!'})
+    db.banChat(req.body.id, function (err, result) {
+        if (err)
+            res.send(err);
+        else
+            res.send(result);
+    });
+});
+
+httpApp.post('/banView/', function (req, res) {
+    if (!req.body || !req.body.id)
+        res.json({code: 'ERROR', message: 'data is invalid!'})
+    db.banView(req.body.id, function (err, result) {
+        if (err)
+            res.send(err);
+        else
+            res.send(result);
+    });
+});
+
+httpApp.post('/unBanChat/', function (req, res) {
+    if (!req.body || !req.body.id)
+        res.json({code: 'ERROR', message: 'data is invalid!'})
+    db.unBanChat(req.body.id, function (err, result) {
+        if (err)
+            res.send(err);
+        else
+            res.send(result);
+    });
+});
+
+httpApp.post('/unBanView/', function (req, res) {
+    if (!req.body || !req.body.id)
+        res.json({code: 'ERROR', message: 'data is invalid!'})
+    db.unBanView(req.body.id, function (err, result) {
+        if (err)
+            res.send(err);
+        else
+            res.send(result);
+    });
+});
+
 
 
 // Start Express https server on port 8443

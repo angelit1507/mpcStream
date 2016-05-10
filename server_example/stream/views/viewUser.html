@@ -9,8 +9,10 @@
             <b>Tên: </b> {{user.UserName}}
         </div>
         <div class="form-group" ng-if="isAdmin()">
-            <span ng-click="banChatOfUser()" class="btn btn-sm btn-warning">Cấm chat</span>
-            <span ng-click="banStreamOfUser()" class="btn btn-sm btn-danger">Cấm xem stream</span>
+            <span ng-hide="user.Stream_CanChat===false" ng-click="banChatOfUser()" ng-disabled="btnChatDisabled" class="btn btn-sm btn-warning">Cấm chat</span>
+            <span ng-show="user.Stream_CanChat===false" ng-click="unBanChatOfUser()" ng-disabled="btnChatDisabled" class="btn btn-sm btn-warning">Cho phép chat</span>
+            <span ng-hide="user.Stream_CanView===false" ng-click="banStreamOfUser()" ng-disabled="btnViewDisabled" class="btn btn-sm btn-danger">Cấm xem stream</span>
+            <span ng-show="user.Stream_CanView===false" ng-click="unBanStreamOfUser()" ng-disabled="btnViewDisabled" class="btn btn-sm btn-danger">Cho phép xem stream</span>
         </div>
     </form>
 </div>

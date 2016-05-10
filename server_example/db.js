@@ -212,4 +212,47 @@ connection.deleteSchedule = function (id, callback) {
 }
 
 
+connection.banChat = function (id, callback) {
+    var request = new Request("UPDATE Users SET Stream_CanChat=0 WHERE UserID=" + id, function (err, rowsCount) {
+        if (err) {
+            console.log(err);
+            callback(err);
+        }
+        callback(null);
+    });
+    connection.execSql(request);
+}
+
+connection.banView = function (id, callback) {
+    var request = new Request("UPDATE Users SET Stream_CanView=0 WHERE UserID=" + id, function (err, rowsCount) {
+        if (err) {
+            console.log(err);
+            callback(err);
+        }
+        callback(null);
+    });
+    connection.execSql(request);
+}
+connection.unBanChat = function (id, callback) {
+    var request = new Request("UPDATE Users SET Stream_CanChat=1 WHERE UserID=" + id, function (err, rowsCount) {
+        if (err) {
+            console.log(err);
+            callback(err);
+        }
+        callback(null);
+    });
+    connection.execSql(request);
+}
+
+connection.unBanView = function (id, callback) {
+    var request = new Request("UPDATE Users SET Stream_CanView=1 WHERE UserID=" + id, function (err, rowsCount) {
+        if (err) {
+            console.log(err);
+            callback(err);
+        }
+        callback(null);
+    });
+    connection.execSql(request);
+}
+
 module.exports = connection;

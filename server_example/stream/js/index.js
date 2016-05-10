@@ -13,18 +13,17 @@ app.config(function (localStorageServiceProvider) {
 
 
 app.directive('countdown', ['Util', '$interval', function (Util, $interval) {
-    return{
+    return {
         restrict: 'A',
-        scope :
-        {
+        scope: {
             date: '@'
         },
-        link: function(scope, element) {
+        link: function (scope, element) {
             var future = new Date(scope.date)
             $interval(function () {
                 diff = Math.floor(future.getTime() - new Date().getTime()) / 1000
                 $(element).html(Util.dhms(diff, 1000));
-            },1000);
+            }, 1000);
         }
     }
 }]);
@@ -50,6 +49,15 @@ app.factory('userService', ['$http', 'localStorageService', function ($http, loc
         room_id: 1,
         room_slug: 'mpcStream',
         manager: 28
+    };
+    var waitingSream = {
+        imageUrl: 'http://mpc.edu.vn/f/img/logo.png',
+        videoIds: ['iRugN3aUbHM'],
+        playerVars: {
+            controls: 0,
+            autoplay: 0
+        },
+        currentVideoId: 'iRugN3aUbHM'
     };
     return {
         getUserInfo: function (id) {
@@ -79,12 +87,36 @@ app.factory('userService', ['$http', 'localStorageService', function ($http, loc
         deleteSchedule: function (id) {
             return $http.post(api + 'deleteSchedule', {id: id});
         },
+        banChat: function (id) {
+            return $http.post(api + 'banChat', {id: id});
+        },
+        banView: function (id) {
+            return $http.post(api + 'banView', {id: id});
+        },
+        unBanChat: function (id) {
+            return $http.post(api + 'unBanChat', {id: id});
+        },
+        unBanView: function (id) {
+            return $http.post(api + 'unBanView', {id: id});
+        },
         currentRoom: currentRoom,
         isAdmin: function isAdmin() {
             var user = localStorageService.get('user');
             if (user == null || user.UserID != currentRoom.manager)
                 return false;
             return true;
+        },
+        getWaitingStreamData: function () {
+            var dt = localStorageService.get('wtData')
+            if (dt == null || dt.videoIds == null || dt.videoIds.length == 0)
+            {
+                localStorageService.set('wtData', waitingSream);
+                return waitingSream;
+            }
+            return dt;
+        },
+        setWaitingStreamData: function (dt) {
+            localStorageService.set('wtData', dt);
         }
     }
 }])
@@ -129,8 +161,8 @@ app.run(function ($confirmModalDefaults) {
 })
 app.controller('mainController', mainController);
 
-mainController.$inject = ['$scope', 'userService', '$location', '$q', '$confirm', 'localStorageService', 'toaster', '$filter'];
-function mainController($scope, userService, $location, $q, $confirm, localStorageService, toaster, $filter) {
+mainController.$inject = ['$scope', 'userService', '$location', '$q', '$confirm', 'localStorageService', 'toaster', '$filter', '$window'];
+function mainController($scope, userService, $location, $q, $confirm, localStorageService, toaster, $filter, $window) {
     console.log('new connect');
     if (!localStorageService.isSupported) {
         log('not supported!');
@@ -144,15 +176,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     $scope.chats = [];
     $scope.questions = [];
     $scope.needGetAdminInfo = true;
-    $scope.waitingStream = {
-        imageUrl: 'http://mpc.edu.vn/f/img/logo.png',
-        videoIds: ['sMKoNBRZM1M'],
-        playerVars: {
-            controls: 0,
-            autoplay: 0
-        },
-        currentVideoId: 'sMKoNBRZM1M'
-    }
+    $scope.waitingStream = userService.getWaitingStreamData();
     $scope.currentQuestion = {};
     var qs = localStorageService.get('user');
     if (!qs || !qs.UserID) {
@@ -183,6 +207,13 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
         $q.all([userDefered.promise]).then(function () {
             if (!$scope.currentUser || !$scope.currentUser.UserID) {
                 log('user not found');
+                return;
+            }
+            if (!$scope.currentUser.Stream_CanView) {
+                if (!isAdmin())
+                    showBanStreamDialog();
+                else
+                    toaster.info('Admin đừng tự ban mình nha thím!')
                 return;
             }
             connect($scope.currentRoom, $scope.currentUser)
@@ -263,6 +294,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
                 if ($scope.waitingStream.currentVideoId != $scope.waitingStream.videoIds[0])
                     $scope.waitingStream.currentVideoId = $scope.waitingStream.videoIds[0];
             }
+            userService.setWaitingStreamData($scope.waitingStream);
         })
     };
 
@@ -284,6 +316,9 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     $scope.$on('youtube.player.paused', function ($event, player) {
         console.log('video paused')
         player.playVideo();
+    });
+    $scope.$on('Permision', function ($event, data) {
+        SendPeerMessageToUsers(data.type, data, true);
     });
     $scope.sendQuestion = function () {
         $confirm({}, {
@@ -346,7 +381,43 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
         }).then(function (result) {
         })
     }
+    function onBannedChat() {
+        $scope.currentUser.Stream_CanChat = false;
+        toaster.pop('warning', 'Bạn đã bị cấm chat');
+    }
 
+    function onUnBanChat() {
+        $scope.currentUser.Stream_CanChat = true;
+        toaster.pop('info', 'Bạn đã được admin cho phép chat');
+    }
+
+    function reloadPage() {
+        $window.location.reload();
+    }
+
+    function showBanStreamDialog() {
+        $confirm({
+            title: 'Thông báo!',
+            text: 'Bạn đã bị cấm xem stream',
+            ok: 'Tải lại trang',
+            cancel: 'Thử lại'
+        }).then(reloadPage, reloadPage);
+    }
+
+    function onBannedView() {
+        $scope.currentUser.Stream_CanView = false;
+        disconnect();
+        showBanStreamDialog();
+    }
+
+    function onUnBanView() {
+        $scope.currentUser.Stream_CanView = true;
+        $confirm({
+            title: 'Thông báo!',
+            text: 'Bạn đã được admin cho phép xem stream',
+            ok: 'Tải lại trang'
+        }).then(reloadPage, reloadPage);
+    }
 
     function showLoginForm() {
         $confirm({}, {
@@ -476,6 +547,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
                         if ($scope.waitingStream.currentVideoId != $scope.waitingStream.videoIds[0])
                             $scope.waitingStream.currentVideoId = $scope.waitingStream.videoIds[0];
                     }
+                    userService.setWaitingStreamData($scope.waitingStream);
                 })
                 return;
             case "SetStreamQuestion":
@@ -493,6 +565,50 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
                         var index = $scope.chats.indexOf(c);
                         $scope.chats.splice(index, 1)
                     })
+                })
+                return;
+            case "BanChat":
+                if (content.userId != $scope.currentUser.UserID)
+                    return;
+                if (who == selfEasyrtcid) {
+                    onBannedChat();
+                    return;
+                }
+                $scope.$apply(function () {
+                    onBannedChat();
+                })
+                return;
+            case "UnBanChat":
+                if (content.userId != $scope.currentUser.UserID)
+                    return;
+                if (who == selfEasyrtcid) {
+                    onUnBanChat();
+                    return;
+                }
+                $scope.$apply(function () {
+                    onUnBanChat();
+                })
+                return;
+            case "BanView":
+                if (content.userId != $scope.currentUser.UserID)
+                    return;
+                if (who == selfEasyrtcid) {
+                    onBannedView();
+                    return;
+                }
+                $scope.$apply(function () {
+                    onBannedView();
+                })
+                return;
+            case "UnBanView":
+                if (content.userId != $scope.currentUser.UserID)
+                    return;
+                if (who == selfEasyrtcid) {
+                    onUnBanView();
+                    return;
+                }
+                $scope.$apply(function () {
+                    onUnBanView();
                 })
                 return;
         }
@@ -630,9 +746,12 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
         });
     }
 
-    function SendPeerMessageToUsers(msgType, data) {
+    function SendPeerMessageToUsers(msgType, data, includeMe) {
         for (var user in $scope.listUsers) {
             SendPeerMessageToUser(user, msgType, data);
+        }
+        if (includeMe) {
+            receivePeerMessage(selfEasyrtcid, msgType, data);
         }
     }
 
