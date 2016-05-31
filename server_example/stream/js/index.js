@@ -5,164 +5,21 @@ var otherEasyrtcid = null;
 isConnected = false;
 
 
-var app = angular.module('mpcStream', ['ngRoute', 'ui.bootstrap', 'angular-confirm', 'youtube-embed', 'LocalStorageModule', 'toaster', 'ngAnimate']);
+var app = angular.module('mpcStream', ['ngRoute', 'ui.bootstrap', 'angular-confirm', 'youtube-embed', 'LocalStorageModule', 'toaster', 'ngAnimate', 'luegg.directives']);
 app.config(function (localStorageServiceProvider) {
     localStorageServiceProvider
         .setPrefix('mpc');
 });
 
 
-app.directive('countdown', ['Util', '$interval', function (Util, $interval) {
-    return {
-        restrict: 'A',
-        scope: {
-            date: '@'
-        },
-        link: function (scope, element) {
-            var future = new Date(scope.date)
-            $interval(function () {
-                diff = Math.floor(future.getTime() - new Date().getTime()) / 1000
-                $(element).html(Util.dhms(diff, 1000));
-            }, 1000);
-        }
-    }
-}]);
-
-app.factory('Util', [function () {
-    return {
-        dhms: function (t) {
-            days = Math.floor(t / 86400);
-            t -= days * 86400;
-            hours = Math.floor(t / 3600) % 24;
-            t -= hours * 3600;
-            minutes = Math.floor(t / 60) % 60;
-            t -= minutes * 60;
-            seconds = parseInt(t % 60);
-            return [days + 'd', hours + 'h', minutes + 'm', seconds + 's'].join(' ');
-        }
-    }
-}]);
-
-app.factory('userService', ['$http', 'localStorageService', function ($http, localStorageService) {
-    var api = '/'
-    var currentRoom = {
-        room_id: 1,
-        room_slug: 'mpcStream',
-        manager: 28
-    };
-    var waitingSream = {
-        imageUrl: 'http://mpc.edu.vn/f/img/logo.png',
-        videoIds: ['iRugN3aUbHM'],
-        playerVars: {
-            controls: 0,
-            autoplay: 0
-        },
-        currentVideoId: 'iRugN3aUbHM'
-    };
-    return {
-        getUserInfo: function (id) {
-            return $http.get(api + 'getuser/' + id);
-        },
-        getRoomInfo: function (id) {
-            return $http.get(api + 'getroom/' + id);
-        },
-        login: function (data) {
-            return $http.post(api + 'login', data);
-        },
-        listQuestions: function (model) {
-            return $http.post(api + 'listQuestions', {});
-        },
-        sendQuestion: function (question) {
-            return $http.post(api + 'sendQuestion', question);
-        },
-        deleteQuestion: function (id) {
-            return $http.post(api + 'deleteQuestion', {id: id});
-        },
-        listSchedules: function (model) {
-            return $http.post(api + 'listSchedules', {});
-        },
-        addSchedule: function (question) {
-            return $http.post(api + 'addSchedule', question);
-        },
-        deleteSchedule: function (id) {
-            return $http.post(api + 'deleteSchedule', {id: id});
-        },
-        banChat: function (id) {
-            return $http.post(api + 'banChat', {id: id});
-        },
-        banView: function (id) {
-            return $http.post(api + 'banView', {id: id});
-        },
-        unBanChat: function (id) {
-            return $http.post(api + 'unBanChat', {id: id});
-        },
-        unBanView: function (id) {
-            return $http.post(api + 'unBanView', {id: id});
-        },
-        currentRoom: currentRoom,
-        isAdmin: function isAdmin() {
-            var user = localStorageService.get('user');
-            if (user == null || user.UserID != currentRoom.manager)
-                return false;
-            return true;
-        },
-        getWaitingStreamData: function () {
-            var dt = localStorageService.get('wtData')
-            if (dt == null || dt.videoIds == null || dt.videoIds.length == 0)
-            {
-                localStorageService.set('wtData', waitingSream);
-                return waitingSream;
-            }
-            return dt;
-        },
-        setWaitingStreamData: function (dt) {
-            localStorageService.set('wtData', dt);
-        }
-    }
-}])
-
-app.directive('errSrc', function () {
-    var errSrc = {
-        link: function postLink(scope, iElement, iAttrs) {
-            iElement.bind('error', function () {
-                if (iAttrs.errHide)
-                    $(iElement).hide();
-                else
-                    angular.element(this).attr("src", iAttrs.errSrc);
-            });
-        }
-    }
-    return errSrc;
-});
-app.directive("fileread", [function () {
-    return {
-        scope: {
-            fileread: "="
-        },
-        link: function (scope, element, attributes) {
-            element.bind("change", function (changeEvent) {
-                var reader = new FileReader();
-                reader.onload = function (loadEvent) {
-                    scope.$apply(function () {
-                        scope.fileread = loadEvent.target.result;
-                    });
-                }
-                reader.readAsDataURL(changeEvent.target.files[0]);
-            });
-        }
-    }
-}]);
-
 app.run(function ($confirmModalDefaults) {
-    // $confirmModalDefaults.templateUrl = 'views/addImage.html';
-    // $confirmModalDefaults.defaultLabels.title = 'Modal Title';
     $confirmModalDefaults.defaultLabels.ok = 'Có';
     $confirmModalDefaults.defaultLabels.cancel = 'Không';
 })
 app.controller('mainController', mainController);
 
-mainController.$inject = ['$scope', 'userService', '$location', '$q', '$confirm', 'localStorageService', 'toaster', '$filter', '$window'];
-function mainController($scope, userService, $location, $q, $confirm, localStorageService, toaster, $filter, $window) {
+mainController.$inject = ['$scope', 'userService', '$location', '$q', '$confirm', 'localStorageService', 'toaster', '$filter', '$window', '$document'];
+function mainController($scope, userService, $location, $q, $confirm, localStorageService, toaster, $filter, $window, $document) {
     console.log('new connect');
     if (!localStorageService.isSupported) {
         log('not supported!');
@@ -176,6 +33,11 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     $scope.chats = [];
     $scope.questions = [];
     $scope.needGetAdminInfo = true;
+    $scope.hasSubStreamer = false;
+    $scope.stream = {
+        streamerCount: 0,
+        isSubStreamer: false
+    }
     $scope.waitingStream = userService.getWaitingStreamData();
     $scope.currentQuestion = {};
     var qs = localStorageService.get('user');
@@ -187,7 +49,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     function onViewOnlyMode() {
         $scope.isViewOnly = true;
         $scope.isLoggedIn = false;
-        $scope.currentUser = {UserId: 0, UserName: 'Khách_' + Date.now()};
+        $scope.currentUser = { UserId: 0, UserName: 'Khách_' + Date.now() };
         connect($scope.currentRoom, $scope.currentUser);
     }
 
@@ -209,7 +71,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
                 log('user not found');
                 return;
             }
-            if (!$scope.currentUser.Stream_CanView) {
+            if ($scope.currentUser.Stream_CanView === false) {
                 if (!isAdmin())
                     showBanStreamDialog();
                 else
@@ -221,7 +83,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     }
 
     $scope.onSendChat = function () {
-        if (!isConnected)
+        if (!isConnected || $scope.chatInput.length == 0)
             return;
         var chat = {
             id: Date.now(),
@@ -233,70 +95,87 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
         SendPeerMessageToUsers("Chat", chat);
         $scope.chatInput = '';
     }
+    
     $scope.deleteChat = function (chat, index) {
         SendPeerMessageToUsers("Chat_Delete", chat);
         $scope.chats.splice(index, 1);
     }
 
     $scope.startStream = function () {
-        log('start stream');
-        if (isAdmin()) {
-            $scope.waitingPlayer.stopVideo();
-            var buttonLabel = "Admin Source";
-            easyrtc.initMediaSource(
-                function (stream) {
-                    createLocalVideo(stream, buttonLabel);
-                    isConnected = true;
-                    // notify to clients
-                    $scope.$apply(function () {
-                        $scope.isStreaming = true;
-                    })
-                    for (var user in $scope.listUsers) {
-                        easyrtc.sendPeerMessage(user, 'AdminStartStream', {adminEasyrtcId: selfEasyrtcid},
-                            function (msgType, msgBody) {
-                                console.log("message was sent");
-                            },
-                            function (errorCode, errorText) {
-                                console.log("error was " + errorText);
-                            });
-
-                    }
-                    if (otherEasyrtcid) {
-                        easyrtc.addStreamToCall(otherEasyrtcid, buttonLabel, function (easyrtcid, streamName) {
-                            easyrtc.showError("Informational", "other party " + easyrtcid + " acknowledges receiving " + streamName);
-                        });
-                    }
-                },
-                function (errCode, errText) {
-                    easyrtc.showError(errCode, errText);
-                }, buttonLabel);
+        if (!isAdmin()) {
+            return;
         }
+        log('start stream');
+        $scope.sysMessage('admin starting stream...');
+        easyrtc.setVideoDims(640, 480);
+        stopWaitingVideo()
+        var buttonLabel = "AdminSource";
+        easyrtc.initMediaSource(
+            function (stream) {
+                createLocalVideo(stream, buttonLabel);
+                isConnected = true;
+                // notify to clients
+                $scope.$apply(function () {
+                    $scope.isStreaming = true;
+                    $scope.stream.isStreaming = true;
+                    $scope.stream.sourceName = buttonLabel;
+                })
+                for (var user in $scope.listUsers) {
+                    easyrtc.sendPeerMessage(user, 'AdminStartStream', { adminEasyrtcId: selfEasyrtcid },
+                        function (msgType, msgBody) {
+                            console.log("message was sent");
+                        },
+                        function (errorCode, errorText) {
+                            console.log("error was " + errorText);
+                        });
+
+                }
+                if (otherEasyrtcid) {
+                    easyrtc.addStreamToCall(otherEasyrtcid, buttonLabel, function (easyrtcid, streamName) {
+                        easyrtc.showError("Informational", "other party " + easyrtcid + " acknowledges receiving " + streamName);
+                    });
+                }
+            },
+            function (errCode, errText) {
+                easyrtc.showError(errCode, errText);
+            }, buttonLabel);
     }
 
     $scope.stopStream = function () {
         hangup();
         $scope.isStreaming = false;
+        $scope.stream.isStreaming = false;
     }
     $scope.setStreamWaiting = function () {
         $confirm({
             oldData: $scope.waitingStream
         }, {
-            controller: 'addImage.controller',
-            templateUrl: 'views/addImage.html'
-        }).then(function (result) {
-            SendPeerMessageToUsers('SetWaitingStreamImage', result);
-            $scope.waitingStream.videoIds = result.videoIds;
-            $scope.waitingStream.imageUrl = result.imageUrl;
+                controller: 'addImage.controller',
+                templateUrl: 'views/addImage.html'
+            }).then(function (result) {
+                SendPeerMessageToUsers('SetWaitingStreamImage', result);
+                $scope.waitingStream.videoIds = result.videoIds;
+                $scope.waitingStream.imageUrl = result.imageUrl;
 
-            log('try play video')
+                log('try play video')
 
-            if ($scope.waitingStream.videoIds.length > 0) {
-                if ($scope.waitingStream.currentVideoId != $scope.waitingStream.videoIds[0])
-                    $scope.waitingStream.currentVideoId = $scope.waitingStream.videoIds[0];
-            }
-            userService.setWaitingStreamData($scope.waitingStream);
-        })
+                if ($scope.waitingStream.videoIds.length > 0) {
+                    if ($scope.waitingStream.currentVideoId != $scope.waitingStream.videoIds[0])
+                        $scope.waitingStream.currentVideoId = $scope.waitingStream.videoIds[0];
+                }
+                userService.setWaitingStreamData($scope.waitingStream);
+            })
     };
+    $scope.setSubStreamer = function (easyId) {
+        SendPeerMessageToUser(easyId, 'SubStreamerCanStream', {});
+    }
+    $scope.stopSubStreamer = function (easyId) {
+        SendPeerMessageToUser(easyId, 'SubStreamerStopStream', {});
+        $scope.stream.subStreamId = '';
+    }
+    $scope.isAdminStreamOnly = function () {
+        return !$scope.stream.isSubStreamerStreaming;
+    }
 
     $scope.$on('youtube.player.ended', function ($event, player) {
         console.log('video end')
@@ -325,10 +204,19 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
             controller: 'sendQuestion.controller',
             templateUrl: 'views/sendQuestion.html'
         }).then(function (result) {
-            $scope.questions = [];
-            getListQuestions();
+
         })
     };
+    $scope.sysMessage = function sysMessage(text) {
+        var chat = {
+            id: Date.now(),
+            userRtcId: selfEasyrtcid,
+            content: text,
+            user: { UserID: -1, UserName: 'system' }
+        };
+        $scope.chats.push(chat);
+        SendPeerMessageToUsers("Chat", chat);
+    }
 
 
     $scope.isAdmin = isAdmin;
@@ -360,10 +248,10 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
         $confirm({
             question: question
         }, {
-            controller: 'viewQuestion.controller',
-            templateUrl: 'views/viewQuestion.html'
-        }).then(function (result) {
-        })
+                controller: 'viewQuestion.controller',
+                templateUrl: 'views/viewQuestion.html'
+            }).then(function (result) {
+            })
     }
     $scope.logout = function () {
         localStorageService.remove('user');
@@ -376,10 +264,10 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
         $confirm({
             id: id
         }, {
-            controller: 'viewUser.controller',
-            templateUrl: 'views/viewUser.html'
-        }).then(function (result) {
-        })
+                controller: 'viewUser.controller',
+                templateUrl: 'views/viewUser.html'
+            }).then(function (result) {
+            })
     }
     function onBannedChat() {
         $scope.currentUser.Stream_CanChat = false;
@@ -465,22 +353,22 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
 
     function addMediaStreamToDiv(divId, stream, streamName, isLocal) {
         // reset
-        document.getElementById('videoStream').innerHTML = '';
+        document.getElementById(divId).innerHTML = '';
         var container = document.createElement("div");
         //container.style.marginBottom = "10px";
         var formattedName = streamName.replace("(", "<br>").replace(")", "");
         var labelBlock = document.createElement("div");
-        labelBlock.style.width = "220px";
-        labelBlock.style.cssFloat = "left";
+        // labelBlock.style.width = "220px";
+        // labelBlock.style.cssFloat = "left";
         labelBlock.innerHTML = "<pre>" + formattedName + "</pre><br>";
         //container.appendChild(labelBlock);
         var video = document.createElement("video");
-        // video.width = 320;
         // video.height = 240;
         video.muted = isLocal;
+        video.style.width = "100%";
         video.style.verticalAlign = "middle";
         container.appendChild(video);
-        document.getElementById('videoStream').appendChild(container);
+        document.getElementById(divId).appendChild(container);
         video.autoplay = true;
         easyrtc.setVideoObjectSrc(video, stream);
         return labelBlock;
@@ -533,16 +421,14 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
                 log('get waiting image...');
                 $scope.needGetAdminInfo = false;
                 SendPeerMessageToUser(who, "GetWaitingStreamData");
-                if (isConnected && !$scope.isStreaming)
-                    callToAdmin(who)
+                // if (isConnected && !$scope.isStreaming)
+                //     callToAdmin(who)
                 return;
             case "SetWaitingStreamImage":
                 $scope.$apply(function () {
                     $scope.waitingStream.videoIds = content.videoIds;
                     $scope.waitingStream.imageUrl = content.imageUrl;
-
                     log('try play video')
-
                     if ($scope.waitingStream.videoIds.length > 0) {
                         if ($scope.waitingStream.currentVideoId != $scope.waitingStream.videoIds[0])
                             $scope.waitingStream.currentVideoId = $scope.waitingStream.videoIds[0];
@@ -557,10 +443,11 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
                 return;
             case "GetWaitingStreamData":
                 SendPeerMessageToUser(who, "SetWaitingStreamImage", $scope.waitingStream);
+                SendPeerMessageToUser(who, "SetStreamData", $scope.stream);
                 return;
             case "Chat_Delete":
                 $scope.$apply(function () {
-                    var chats = $filter('filter')($scope.chats, {id: content.id});
+                    var chats = $filter('filter')($scope.chats, { id: content.id });
                     chats.forEach(function (c) {
                         var index = $scope.chats.indexOf(c);
                         $scope.chats.splice(index, 1)
@@ -611,9 +498,51 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
                     onUnBanView();
                 })
                 return;
+            case "SubStreamerCanStream":
+                startStream();
+                $scope.$apply(function () {
+                    $scope.isStreaming = true;
+                })
+                return;
+            case "SubStreamerStopStream":
+                log('close local stream');
+                easyrtc.closeLocalStream('SubStreamSource');
+                $scope.$apply(function () {
+                    $scope.isStreaming = false;
+                    $scope.stream.isSubStreamerStreaming = false;
+                })
+                return;
+            case "SubStreamerStartStream":
+                if (!isAdmin() && $scope.isStreaming) {
+                    log('close local stream');
+                    easyrtc.closeLocalStream($scope.stream.sourceName);
+                }
+                callToStreamer(who);
+                $scope.$apply(function () {
+                    $scope.sysMessage('subStreamer start streaming');
+                    $scope.hasSubStreamer = true;
+                    $scope.stream.subStreamId = who;
+                    $scope.stream.hasSubStreamer = true;
+                    $scope.stream.isSubStreamerStreaming = true;
+                })
+                return;
+            case "SetStreamData":
+                log('get stream data');
+                $scope.$apply(function () {
+                    $scope.stream = angular.extend($scope.stream, content);
+                    $scope.stream.streamerCount = 0;
+                })
+                if ($scope.stream.isStreaming) {
+                    callToAdmin(who);
+                }
+                if ($scope.stream.isSubStreamerStreaming) {
+                    callToStreamer($scope.stream.subStreamId)
+                }
+                return;
         }
         content.from = who;
         $scope.chats.push(content);
+        
         $scope.$apply();
     }
 
@@ -626,6 +555,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
             return;
         }
         log("Initializing.");
+
         easyrtc.setPeerListener(receivePeerMessage);
         // audio only
         log("Enable video stream....");
@@ -636,6 +566,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
         console.log('connect with user name: ' + user.UserName);
 
         easyrtc.setUsername(user.UserName);
+
         easyrtc.joinRoom(room.room_slug, null, function () {
             log("joined room " + room.room_slug);
         }, function () {
@@ -670,6 +601,7 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
 
     function hangup() {
         easyrtc.hangupAll();
+        easyrtc.closeLocalStream($scope.stream.sourceName);
         hide('hangupButton');
     }
 
@@ -691,20 +623,19 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     }
 
     function stopWaitingVideo() {
-        $scope.$apply(function () {
-            try {
-                $scope.waitingPlayer.stopVideo();
-            }
-            catch (e) {
-                setTimeout(stopWaitingVideo, 1000)
-            }
-        })
+        try {
+            $scope.waitingPlayer.stopVideo();
+        }
+        catch (e) {
+            setTimeout(stopWaitingVideo, 1000)
+        }
     }
 
+    var iceServers = [];
     function performCall(targetEasyrtcId) {
         var acceptedCB = function (accepted, easyrtcid) {
             if (!accepted) {
-                log('call rehected');
+                log('call rejected');
                 easyrtc.showError("CALL-REJECTED", "Sorry, your call to " + easyrtc.idToName(easyrtcid) + " was rejected");
                 enable('otherClients');
             }
@@ -715,17 +646,17 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
             }
         };
 
-        var successCB = function () {
-            log('call successfull')
+        var successCB = function (caller, mediaType) {
+            console.log('call successfull', caller, mediaType)
             isConnected = true;
             show('hangupButton');
         };
-        var failureCB = function () {
+        var failureCB = function (errorCode, errMessage) {
             enable('otherClients');
-            log('call failed')
+            log('call failed', errorCode, errMessage);
         };
         var keys = easyrtc.getLocalMediaIds();
-
+        easyrtc.setIceUsedInCalls(iceServers);
         easyrtc.call(targetEasyrtcId, successCB, failureCB, acceptedCB, keys);
         show('hangupButton');
     }
@@ -735,11 +666,10 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     }
 
     function loginSuccess(easyrtcid) {
-        hide("connectButton");
-        show("disconnectButton");
-        enable('otherClients');
         selfEasyrtcid = easyrtcid;
-        log('connect to rtc success')
+        $scope.sysMessage('Kết nối thành công!')
+        iceServers = easyrtc.getServerIce();
+        easyrtc.setVideoBandwidth(0);
         $scope.$apply(function () {
             isConnected = true;
             $scope.canStream = true;
@@ -782,11 +712,16 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
 
     easyrtc.setStreamAcceptor(function (easyrtcid, stream, streamName) {
         console.log('accepter')
-        var labelBlock = addMediaStreamToDiv("remoteVideos", stream, streamName, false);
         $scope.$apply(function () {
             $scope.isStreaming = true;
-            $scope.waitingPlayer.stopVideo();
+            $scope.stream = angular.extend($scope.stream, { isStreaming: true, streamerCount: $scope.stream.streamerCount + 1 })
+            stopWaitingVideo();
         });
+        var labelBlock;
+        if (streamName == "AdminSource" || isAdmin())
+            labelBlock = addMediaStreamToDiv("videoStream", stream, streamName, false);
+        else
+            labelBlock = addMediaStreamToDiv("videoStream1", stream, streamName, false);
         //labelBlock.parentNode.id = "remoteBlock" + easyrtcid + streamName;
         log("accepted incoming stream with name " + stream.streamName);
         log("checking incoming " + easyrtc.getNameOfRemoteStream(easyrtcid, stream));
@@ -794,11 +729,21 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
 
 
     easyrtc.setOnStreamClosed(function (easyrtcid, stream, streamName) {
-        var item = document.getElementById("remoteBlock" + easyrtcid + streamName);
+        log('stream close');
         $scope.$apply(function () {
-            $scope.isStreaming = false;
+            if (streamName == "AdminSource") {
+                if ($scope.isStreaming) {
+                    log('close local stream');
+                    easyrtc.closeLocalStream("SubStreamSource");
+                }
+                $scope.stream.isStreaming = false;
+                $scope.isStreaming = false;
+                $scope.stream.isSubStreamerStreaming = false;
+            }
+            else {
+                $scope.stream.isSubStreamerStreaming = false;
+            }
         })
-        //item.parentNode.removeChild(item);
     });
 
 
@@ -813,9 +758,6 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
 
     easyrtc.setAcceptChecker(function (easyrtcid, callback) {
         otherEasyrtcid = easyrtcid;
-        // if (easyrtc.getConnectionCount() > 0) {
-        //     easyrtc.hangupAll();
-        // }
         callback(true, easyrtc.getLocalMediaIds());
     });
 
@@ -829,5 +771,25 @@ function mainController($scope, userService, $location, $q, $confirm, localStora
     function callToAdmin(adminId) {
         log('call to admin');
         performCall(adminId);
+    }
+    function callToStreamer(easyrtcid) {
+        log('call to subStreamer....');
+        performCall(easyrtcid);
+    }
+    function startStream() {
+        log('subStreamer start stream.....');
+        var buttonLabel = "SubStreamSource";
+        easyrtc.initMediaSource(
+            function (stream) {
+                createLocalVideo(stream, buttonLabel);
+                $scope.$apply(function () {
+                    $scope.isStreaming = true;
+                    $scope.stream.isSubStreamerStreaming = true;
+                })
+                SendPeerMessageToUsers('SubStreamerStartStream', {})
+            },
+            function (errCode, errText) {
+                easyrtc.showError(errCode, errText);
+            }, buttonLabel);
     }
 }

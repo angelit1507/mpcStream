@@ -28,29 +28,26 @@ connection.getUserById = function (userId, callback) {
         if (err) {
             console.log(err);
             callback(err);
+            return;
         }
-        if (rowsCount == 0)
-            callback({code: 'NotFound'});
-    });
-    request.on('row', function (columns) {
+        if (rowsCount == 0) {
+            callback({ code: 'NotFound' });
+            return;
+        }
+        columns = rows[0];
         if (columns.length == 0) {
-            callback({code: 'NotFound'}, null);
+            callback({ code: 'NotFound' }, null);
             return
         }
         var result = {};
         columns.forEach(function (column) {
             if (column.value === null) {
-                console.log('NULL');
+
             } else {
                 result[column.metadata.colName] = column.value;
             }
         });
         callback(null, result);
-    });
-
-    request.on('done', function (rowCount, more) {
-        console.log(rowCount + ' rows returned');
-        callback(null, rowCount)
     });
     connection.execSql(request);
 }
@@ -60,19 +57,17 @@ connection.login = function (user, callback) {
         if (err) {
             console.log(err);
             callback(err);
+            return;
         }
-        if (rowsCount == 0)
-            callback({code: 'NotFound'});
-    });
-    request.on('row', function (columns) {
-        if (columns.length == 0) {
-            callback({code: 'NotFound'}, null);
-            return
+        if (rowsCount == 0) {
+            callback({ code: 'NotFound' });
+            return;
         }
+        var columns = rows[0];
         var result = {};
         columns.forEach(function (column) {
             if (column.value === null) {
-                console.log('NULL');
+
             } else {
                 result[column.metadata.colName] = column.value;
             }
@@ -80,17 +75,39 @@ connection.login = function (user, callback) {
         // check password
         var hash = crypto.createHash('md5').update(user.password).digest("hex");
         if (hash != result.PassWord) {
-            callback({code: 'PassNotMatch'});
+            callback({ code: 'PassNotMatch' });
             return;
         }
         result.PassWord = '';
         callback(null, result);
     });
+    // request.on('row', function (columns) {
+    //     if (columns.length == 0) {
+    //         callback({code: 'NotFound'}, null);
+    //         return
+    //     }
+    //     var result = {};
+    //     columns.forEach(function (column) {
+    //         if (column.value === null) {
+    //             console.log('NULL');
+    //         } else {
+    //             result[column.metadata.colName] = column.value;
+    //         }
+    //     });
+    //     // check password
+    //     var hash = crypto.createHash('md5').update(user.password).digest("hex");
+    //     if (hash != result.PassWord) {
+    //         callback({code: 'PassNotMatch'});
+    //         return;
+    //     }
+    //     result.PassWord = '';
+    //     callback(null, result);
+    // // });
 
-    request.on('done', function (rowCount, more) {
-        console.log(rowCount + ' rows returned');
-        callback(null, rowCount)
-    });
+    // request.on('done', function (rowCount, more) {
+    //     console.log(rowCount + ' rows returned');
+    //     callback(null, rowCount)
+    // });
     connection.execSql(request);
 }
 
@@ -113,7 +130,7 @@ connection.listQuestions = function (model, callback) {
             var result = {};
             columns.forEach(function (column) {
                 if (column.value === null) {
-                    console.log('NULL');
+                    
                 } else {
                     result[column.metadata.colName] = column.value;
                 }
@@ -127,19 +144,18 @@ connection.listQuestions = function (model, callback) {
 connection.sendQuestion = function (question, callback) {
     var now = new Date(); // 2016-03-03 00:00:00.000
     var created = now.getFullYear() + '-' + now.getMonth() + '-' + now.getDay() + ' ' + now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds() + '.' + now.getMilliseconds();
-    console.log(question.Content);
     var request = new Request("INSERT INTO Stream_Questions (UserID, Title, Content, Image, IsDeleted) VALUES (" + question.UserID + ",N'"
         + question.Title + "',N'"
         + question.Content + "','"
         + question.Image + "',"
         + "'false');", function (err, rowsCount, rows) {
-        if (err) {
-            console.log(err);
-            callback(err);
-            return;
-        }
-        callback(null, {});
-    });
+            if (err) {
+                console.log(err);
+                callback(err);
+                return;
+            }
+            callback(null, {});
+        });
     connection.execSql(request);
 }
 
@@ -190,13 +206,13 @@ connection.addSchedule = function (schedule, callback) {
         + schedule.Content + "','"
         + schedule.Image + "',"
         + "'" + schedule.StreamTime + "');", function (err, rowsCount, rows) {
-        if (err) {
-            console.log(err);
-            callback(err);
-            return;
-        }
-        callback(null, {});
-    });
+            if (err) {
+                console.log(err);
+                callback(err);
+                return;
+            }
+            callback(null, {});
+        });
     connection.execSql(request);
 }
 

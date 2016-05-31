@@ -212,3 +212,42 @@ body {
 .chat_panel .list-group-item:hover .btn-remove-chat {
     display: block;
 }
+
+#localVideos{
+    z-index: 999;
+    width: 200px;
+    position: absolute;
+    background-color: white;
+    border: 2px solid #ccc;
+    bottom: 0px;
+    left: 0px;
+    margin-left: 23%;
+    margin-bottom: 10%;
+}
+#videoStream1{
+    z-index: 999;
+    width: 200px;
+    position: absolute;
+    background-color: white;
+    border: 2px solid #ccc;
+    bottom: 0px;
+    left: 0px;
+    margin-left: 23%;
+    margin-bottom: 10%;
+}
+
+.full_view{
+    width: 100% !important;
+    margin-left: 0px !important;
+    margin-bottom: 0px !important;
+    border: none !important;
+    display: block;
+    position: inherit !important;
+}
+
+.transit {
+    transition: left 1s, top 0s, right 1s, bottom 1s, width 1s, height 1s, transform 1s;
+    -moz-transition: left 1s, top 0s, right 1s, bottom 1s, width 1s, height 1s, -moz-transform 1s;
+    -webkit-transition: left 1s, top 0s, right 1s, bottom 1s, width 1s, height 1s, -webkit-transform 1s;
+    -o-transition: left 1s, top 0s, right 1s, bottom 1s, width 1s, height 1s,-o-transform 1s;
+}

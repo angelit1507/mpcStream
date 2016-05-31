@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="vi" prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb#" ng-app="mpcStream">
+
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Class Room Free</title>
-    <link rel="profile" href="http://gmpg.org/xfn/11">
     <link rel="stylesheet" type="text/css" href="public/css/reset.css">
     <link rel="stylesheet" type="text/css" href="public/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="public/bootstrap/css/bootstrap-theme.min.css">
@@ -25,190 +25,53 @@
     <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
 </head>
+
 <body ng-controller="mainController">
-<header class="header" id="header">
-    <nav class="navbar navbar-default navbar-inverse navbar-static-top">
+    <header class="header" id="header" ng-include="'views/header.html'"></header>
+    <section class="body-wrapper" id="body-wrapper">
+        <section class="container-fluid full-width">
+            <section class="left" ng-include="'views/sidebar_left.html'"> </section>
+            <section class="center" ng-include="'views/main.html'"></section>
+            <section class="right" ng-include="'views/sidebar_right.html'"></section>
+        </section>
+    </section>
+    <footer class="footer" id="footer">
         <section class="container-fluid">
-            <section class="navbar-header">
-                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
-                        data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="#">Mpc.edu.vn</a>
-            </section>
-            <section class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-                <ul class="nav navbar-nav">
-                    <li class="dropdown" ng-show="isAdmin()">
-                        <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
-                           aria-expanded="false"><span class="btn btn-xs btn-primary ">Stream <span class="caret"></span></span></a>
-                        <ul class="dropdown-menu">
-                            <li ng-class="{'disabled': !canStream || isStreaming}"><a ng-click="startStream()">Bắt đầu
-                                phát</a></li>
-                            <li ng-class="{'disabled': canStream && !isStreaming}"><a ng-click="stopStream()">Dừng
-                                phát</a></li>
-                            <li ng-class="{'disabled': !canStream || isStreaming}"><a ng-click="setStreamWaiting()">Chọn
-                                ảnh - nhạc chờ</a></li>
-                            <li role="separator" class="sectionider"></li>
-                            <li role="separator" class="sectionider"></li>
-                            <li><a ng-click="listQuestions()">Danh sách câu hỏi</a></li>
-                        </ul>
-                    </li>
-                    <li ng-show="!isViewOnly"><a ng-click="sendQuestion()"><span class="btn btn-xs btn-info">Gửi câu hỏi</span></a></li>
-                    <li><a ng-click="listStreamSchedules()"><span class="btn btn-xs btn-info">Lịch stream</span></a></li>
-                </ul>
-                <ul class="nav navbar-nav navbar-right">
-                    <li ng-show="isLoggedIn"><a ng-click="logout()"><span class="btn btn-xs btn-danger" >Đăng xuất</span></a></li>
-                    <li ng-hide="isLoggedIn"><a ng-click="showLoginForm()"><span class="btn btn-xs btn-primary" >Đăng nhập</span></a></li>
-                </ul>
-            </section>
+            <p class="copyright">Copyright © 2016 Mpc.edu.vn. All Rights Reserved.<span class="pull-right"><a href="https://www.facebook.com/alonekig">@Angel íT</a></span></p>
         </section>
-    </nav>
-</header>
-<section class="body-wrapper" id="body-wrapper">
-    <section class="container-fluid full-width">
-        <section class="left">
-            <section class="panel user_panel">
-                <section class="panel_title">
-                    <span class="title_left">Đang trực tuyến</span>
-                    <span class="title_right"><i class="fa fa-minus"></i></span>
-                </section>
-                <section class="panel_body panel_scroll">
-                    <table class="table table-bordered table-condensed">
-                        <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Name</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td><i class="fa fa-user"></i></td>
-                            <td ng-click="viewUser(currentUser.UserID);">Me</td>
-                        </tr>
-                        <tr ng-repeat="user in listUsers">
-                            <td><i class="fa fa-user"></i></td>
-                            <td>{{user.username}}</td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </section>
-            </section>
+    </footer>
+    <toaster-container toaster-options="{'position-class': 'toast-bottom-right'}"></toaster-container>
+    <!-- Scripts -->
+    <script type="text/javascript" src="public/jQuery/jquery-2.2.1.min.js"></script>
+    <script type="text/javascript" src="public/bootstrap/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="public/js/default.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript" src="/easyrtc/easyrtc.js"></script>
 
-            <section class="panel video_panel">
-                <section class="panel_title">
-                    <span class="title_left">Người thực hiện</span>
-                    <span class="title_right"><i class="fa fa-minus"></i></span>
-                </section>
-                <section class="panel_body ">
-                    <h4>Quốc Phong Vương</h4>
-                    <div class="media">
-                        <div class="media-left">
-                            <img src="http://mpc.edu.vn/f/img/u28/admin" height="40" alt="...">
-                        </div>
-                        <div class="media-body">
-                            <p>Con đường học vấn sẽ là con đường bền vững nhất dẫn đến thành công</p>
-                        </div>
-                    </div>
-                </section>
-            </section>
-        </section>
-        <section class="center">
-            <section class="panel">
-                <div id="videoStream" ng-show="isStreaming"></div>
-                <div id="waitingStream" ng-show="!isStreaming" class="panel_body">
-                    <img ng-src="{{waitingStream.imageUrl}}" width="100%" height="100%"/>
-                    <youtube-video player="waitingPlayer" style="display: none" video-id="waitingStream.currentVideoId"
-                                   player-vars="waitingStream.playerVars"></youtube-video>
-                </div>
-            </section>
-            <section class="panel question_panel">
-                <section class="panel_title">
-                    <span class="title_left">Câu hỏi</span>
-                    <span class="title_right"><i class="fa fa-plus"></i></span>
-                </section>
-                <section class="panel_body panel_scroll">
-                    <p ng-if="!currentQuestion.Stream_QuestionID">Admin chưa chọn câu hỏi</p>
-                    <div ng-if="currentQuestion.Stream_QuestionID" ng-click="viewQuestion(currentQuestion)" class="question_item">
-                        <div class="media">
-                            <div class="media-left">
-                                <img ng-src="http://mpc.edu.vn/f/img/u{{currentQuestion.UserID}}" err-src="http://mpc.edu.vn/f/img/logo.png"  height="40" alt="...">
-                            </div>
-                            <div class="media-body">
-                                <b>{{currentQuestion.Title}}</b>
-                            </div>
-                            <p>{{currentQuestion.Content}}</p>
-                        </div>
-                    </div>
-                </section>
-            </section>
-        </section>
-        <section class="right">
-            <section class="panel chat_panel">
-                <section class="panel_title">
-                    <span class="title_left">Chat</span>
-                    <span class="title_right"><i class="fa fa-minus"></i></span>
-                </section>
-                <section class="panel_body panel_scroll">
-                    <ul class="list-group">
-                        <li ng-repeat="chat in chats" class="list-group-item">
-                            <b ng-click="viewUser(chat.user.UserID);"><a>{{chat.user.UserName || 'Me'}}</a></b> - {{chat.content}}
-                            <span ng-show="isAdmin()" confirm="Xác nhận xóa nội dung chat?" ng-click="deleteChat(chat, $index)" class="btn btn-xs btn-danger pull-right btn-remove-chat"><i class="fa fa-remove"></i></span>
-                        </li>
-                    </ul>
-                </section>
-                <section class="panel_footer">
-                    <form action="" method="">
-                        <section class="input-group">
-                            <textarea ng-disabled="currentUser.Stream_CanChat===false || isViewOnly" class="form-control" ng-model="chatInput"
-                                      placeholder="Enter your messages"></textarea>
-								<span class="input-group-btn">
-									<input type="button" class="btn btn-info" id="chat_submit"
-                                           ng-click="currentUser.Stream_CanChat===true && !isViewOnly && onSendChat();"
-                                           value="Send">
-								</span>
-                        </section>
-                    </form>
-                </section>
-            </section>
-        </section>
-    </section>
-</section>
-<footer class="footer" id="footer">
-    <section class="container-fluid">
-        <p class="copyright">Copyright © 2016 Mpc.edu.vn. All Rights Reserved.<span class="pull-right"><a href="https://www.facebook.com/alonekig">@Angel íT</a></span></p>
-    </section>
-</footer>
-<toaster-container toaster-options="{'position-class': 'toast-bottom-right'}"></toaster-container>
-<!-- Scripts -->
-<script type="text/javascript" src="public/jQuery/jquery-2.2.1.min.js"></script>
-<script type="text/javascript" src="public/bootstrap/js/bootstrap.min.js"></script>
-<script type="text/javascript" src="public/js/default.js"></script>
-<script src="/socket.io/socket.io.js"></script>
-<script type="text/javascript" src="/easyrtc/easyrtc.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular.min.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular-route.min.js"></script>
 
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular.min.js"></script>
-<script type="text/javascript"
-        src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular-route.min.js"></script>
+    <script type="text/javascript" src="bower_components/angular-animate/angular-animate.min.js"></script>
+    <script type="text/javascript" src="bower_components/angular-bootstrap/ui-bootstrap-tpls.js"></script>
+    <script type="text/javascript" src="bower_components/angular-confirm-modal/angular-confirm.min.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script type="text/javascript" src="public/angular-youtube-embed-master/src/angular-youtube-embed.js"></script>
+    <script type="text/javascript" src="bower_components/angular-local-storage/dist/angular-local-storage.min.js"></script>
 
-<script type="text/javascript" src="bower_components/angular-animate/angular-animate.min.js"></script>
-<script type="text/javascript" src="bower_components/angular-bootstrap/ui-bootstrap-tpls.js"></script>
-<script type="text/javascript" src="bower_components/angular-confirm-modal/angular-confirm.min.js"></script>
-<script src="https://www.youtube.com/iframe_api"></script>
-<script type="text/javascript" src="public/angular-youtube-embed-master/src/angular-youtube-embed.js"></script>
-<script type="text/javascript" src="bower_components/angular-local-storage/dist/angular-local-storage.min.js"></script>
+    <script type="text/javascript" src="bower_components/AngularJS-Toaster/toaster.min.js"></script>
+    
+    <script type="text/javascript" src="bower_components/angular-scroll-glue/src/scrollglue.js"></script>
 
-<script type="text/javascript" src="bower_components/AngularJS-Toaster/toaster.min.js"></script>
-
-<script type="text/javascript" src="js/index.js"></script>
-<script type="text/javascript" src="js/addImage.controller.js"></script>
-<script type="text/javascript" src="js/sendQuestion.controller.js"></script>
-<script type="text/javascript" src="js/listQuestion.controller.js"></script>
-<script type="text/javascript" src="js/viewQuestion.controller.js"></script>
-<script type="text/javascript" src="js/viewUser.controller.js"></script>
-<script type="text/javascript" src="js/listStreamSchedules.controller.js"></script>
-<script type="text/javascript" src="js/login.controller.js"></script>
+    <script type="text/javascript" src="js/index.js"></script>
+    <script type="text/javascript" src="js/services.js"></script>
+    <script type="text/javascript" src="js/directives.js"></script>
+    <script type="text/javascript" src="js/addImage.controller.js"></script>
+    <script type="text/javascript" src="js/sendQuestion.controller.js"></script>
+    <script type="text/javascript" src="js/listQuestion.controller.js"></script>
+    <script type="text/javascript" src="js/viewQuestion.controller.js"></script>
+    <script type="text/javascript" src="js/viewUser.controller.js"></script>
+    <script type="text/javascript" src="js/listStreamSchedules.controller.js"></script>
+    <script type="text/javascript" src="js/login.controller.js"></script>
 </body>
+
 </html>

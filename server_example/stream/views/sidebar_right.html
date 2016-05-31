@@ -1,0 +1,27 @@
+<section class="panel chat_panel">
+                    <section class="panel_title">
+                        <span class="title_left">Chat</span>
+                        <span class="title_right"><i class="fa fa-minus"></i></span>
+                    </section>
+                    <section class="panel_body panel_scroll" scroll-glue-bottom="true">
+                        <ul class="list-group">
+                            <li ng-repeat="chat in chats" class="list-group-item">
+                                <b ng-click="chat.user.UserID>=0 && viewUser(chat.user.UserID);"><a>{{chat.user.UserName || 'Me'}}</a></b> - {{chat.content}}
+                                <span ng-show="chat.user.UserID>=0 && isAdmin()" confirm="Xác nhận xóa nội dung chat?" ng-click="deleteChat(chat, $index)" class="btn btn-xs btn-danger pull-right btn-remove-chat"><i class="fa fa-remove"></i></span>
+                            </li>
+                        </ul>
+                    </section>
+                    <section class="panel_footer">
+                        <form action="" method="">
+                            <section class="input-group">
+                                <textarea ng-keyup="$event.keyCode==13 && currentUser.Stream_CanChat!==false && !isViewOnly && onSendChat();" ng-disabled="currentUser.Stream_CanChat===false || isViewOnly"
+                                    class="form-control" ng-model="$parent.chatInput" placeholder="Enter your messages"></textarea>
+                                <span class="input-group-btn">
+									<input type="button" class="btn btn-info" id="chat_submit"
+                                           ng-click="currentUser.Stream_CanChat!==false && !isViewOnly && onSendChat();"
+                                           value="Send">
+								</span>
+                            </section>
+                        </form>
+                    </section>
+                </section>

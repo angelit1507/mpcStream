@@ -1,0 +1,30 @@
+<section class="panel">
+    <div id="localVideos" ng-show="isStreaming" class="transit {{isAdminStreamOnly()?'full_view':''}}"></div>
+    <div id="videoStream" ng-if="(!isAdmin() && stream.isStreaming) || stream.isSubStreamerStreaming"></div>
+    <div id="videoStream1" ng-if="stream.isSubStreamerStreaming"></div>
+    <div id="waitingStream" ng-show="!isStreaming && !stream.isStreaming" class="panel_body">
+        <img ng-src="/img_proxy/?image_url={{waitingStream.imageUrl}}" width="100%" height="100%" />
+        <youtube-video player="waitingPlayer" style="display: none" video-id="waitingStream.currentVideoId" player-vars="waitingStream.playerVars"></youtube-video>
+    </div>
+</section>
+<section class="panel question_panel">
+    <section class="panel_title">
+        <span class="title_left">Câu hỏi</span>
+        <span class="title_right"><i class="fa fa-plus"></i></span>
+    </section>
+    <section class="panel_body panel_scroll">
+        <p ng-if="!currentQuestion.Stream_QuestionID">Admin chưa chọn câu hỏi</p>
+        <div ng-if="currentQuestion.Stream_QuestionID" ng-click="viewQuestion(currentQuestion)" class="question_item">
+            <div class="media">
+                <div class="media-left">
+                    <img ng-src="/img_proxy/?image_url=http://mpc.edu.vn/f/img/u{{currentQuestion.UserID}}" err-src="/img_proxy/?image_url=http://mpc.edu.vn/f/img/logo.png" height="40"
+                        alt="...">
+                </div>
+                <div class="media-body">
+                    <b>{{currentQuestion.Title}}</b>
+                </div>
+                <p>{{currentQuestion.Content}}</p>
+            </div>
+        </div>
+    </section>
+</section>
